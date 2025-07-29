@@ -1,0 +1,24 @@
+1:"$Sreact.fragment"
+2:I[61483,["69","static/chunks/69-c9cd7491f74ebd1b.js","766","static/chunks/766-f7f01bef3886922e.js","189","static/chunks/189-400a36b298f9a588.js","177","static/chunks/app/layout-28556d992d3524b6.js"],"ThemeProvider"]
+3:I[87555,[],""]
+4:I[31295,[],""]
+5:I[52558,["69","static/chunks/69-c9cd7491f74ebd1b.js","766","static/chunks/766-f7f01bef3886922e.js","189","static/chunks/189-400a36b298f9a588.js","177","static/chunks/app/layout-28556d992d3524b6.js"],"Toaster"]
+6:I[90894,[],"ClientPageRoot"]
+7:I[77856,["69","static/chunks/69-c9cd7491f74ebd1b.js","770","static/chunks/770-d388b1b308dd916a.js","841","static/chunks/841-0fda2046e4a62763.js","961","static/chunks/app/instances/page-142778aeb34c1007.js"],"default"]
+a:I[59665,[],"MetadataBoundary"]
+c:I[59665,[],"OutletBoundary"]
+f:I[74911,[],"AsyncMetadataOutlet"]
+11:I[59665,[],"ViewportBoundary"]
+13:I[26614,[],""]
+:HL["/_next/static/css/36f46f65bded33ee.css","style"]
+0:{"P":null,"b":"qskPsJG_QoPopMsznO6AA","p":"","c":["","instances"],"i":false,"f":[[["",{"children":["instances",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/36f46f65bded33ee.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":[["$","head",null,{"children":[["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":"anonymous"}],["$","link",null,{"href":"https://fonts.googleapis.com/css2?family=Inter&display=swap","rel":"stylesheet"}]]}],["$","body",null,{"className":"font-body antialiased","children":["$","$L2",null,{"attribute":"class","defaultTheme":"system","enableSystem":true,"disableTransitionOnChange":true,"children":[["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}],["$","$L5",null,{}]]}]}]]}]]}],{"children":["instances",["$","$1","c",{"children":[null,["$","$L3",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L4",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L6",null,{"Component":"$7","searchParams":{},"params":{},"promises":["$@8","$@9"]}],["$","$La",null,{"children":"$Lb"}],null,["$","$Lc",null,{"children":["$Ld","$Le",["$","$Lf",null,{"promise":"$@10"}]]}]]}],{},null,false]},null,false]},null,false],["$","$1","h",{"children":[null,["$","$1","FPYk3tSS0FsnFquDsMf-z",{"children":[["$","$L11",null,{"children":"$L12"}],null]}],null]}],false]],"m":"$undefined","G":["$13","$undefined"],"s":false,"S":true}
+14:"$Sreact.suspense"
+15:I[74911,[],"AsyncMetadata"]
+8:{}
+9:{}
+b:["$","$14",null,{"fallback":null,"children":["$","$L15",null,{"promise":"$@16"}]}]
+e:null
+12:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+d:null
+16:{"metadata":[["$","title","0",{"children":"CRD Wizard"}],["$","meta","1",{"name":"description","content":"A simple UI to view Kubernetes CRDs."}]],"error":null,"digest":"$undefined"}
+10:{"metadata":"$16:metadata","error":null,"digest":"$undefined"}
