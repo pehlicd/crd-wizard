@@ -9,6 +9,7 @@ CR(D) Wizard
 
 <div align="center">
 
+CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive interface for visualizing and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps developers and cluster administrators quickly understand the state of their custom controllers and the resources they manage.
 
 | Web UI                                                                      |
 |-----------------------------------------------------------------------------|
@@ -20,7 +21,5 @@ CR(D) Wizard
 
 
 </div>
-
-CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive interface for visualizing and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps developers and cluster administrators quickly understand the state of their custom controllers and the resources they manage.
 
 #TODO: add features and installation methods
