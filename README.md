@@ -8,9 +8,10 @@
 <div align="center">
 
 
-| Demo                                      |
-|-------------------------------------------|
-| <img src="/assets/crd-wizard.gif" /> |
+| Web UI                                                                      | TUI                                                                                     |
+|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| <img style="width: 55vw; min-width: 330px;" src="/assets/crd-wizard.gif" /> | <img style="width: 55vw; min-width: 330px; height: 100%;" src="/assets/tui-demo.gif" /> |
+
 
 </div>
 
