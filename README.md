@@ -3,14 +3,20 @@
 </div>
 
 
-# CR(D) Wizard
+<h1 align="center">
+CR(D) Wizard
+</h1>
 
 <div align="center">
 
 
-| Web UI                                                                      | TUI                                                                                     |
-|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| <img style="width: 55vw; min-width: 330px;" src="/assets/crd-wizard.gif" /> | <img style="width: 55vw; min-width: 330px; height: 100%;" src="/assets/tui-demo.gif" /> |
+| Web UI                                                                      |
+|-----------------------------------------------------------------------------|
+| <img style="width: 55vw; min-width: 330px;" src="/assets/crd-wizard.gif" /> |
+
+| TUI                                                                         |
+|-----------------------------------------------------------------------------|
+|  <img style="width: 55vw; min-width: 330px; height: 100%;" src="/assets/tui-demo.gif" /> |
 
 
 </div>
