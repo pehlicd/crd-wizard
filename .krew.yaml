@@ -10,20 +10,34 @@ spec:
         matchLabels:
           os: darwin
           arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+      # FIX: Added "| nindent 6" to correctly indent the output of addURIAndSha.
+      # The 'uri' and 'sha256' fields must be at the same indentation level as 'selector' and 'bin'.
+      {{- addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName | nindent 6 }}
       bin: crd-wizard
     - selector:
         matchLabels:
           os: darwin
           arch: arm64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+      {{- addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName | nindent 6 }}
       bin: crd-wizard
     - selector:
         matchLabels:
           os: linux
           arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+      {{- addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName | nindent 6 }}
       bin: crd-wizard
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
+      {{- addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_linux_arm64.tar.gz" .TagName | nindent 6 }}
+      bin: crd-wizard
+    - selector:
+        matchLabels:
+          os: windows
+          arch: amd64
+      {{- addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_windows_amd64.tar.gz" .TagName | nindent 6 }}
+      bin: crd-wizard.exe
   shortDescription: A tool to explore Kubernetes CR(D)s via a TUI or web interface.
   description: |
     crd-wizard is a powerful CLI application that provides two ways to
