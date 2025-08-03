@@ -39,6 +39,7 @@ build-ui-and-embed: build-ui
 	mv ./ui/dist/* ./internal/web/static/
 	@echo "$(OK_COLOR)==> Cleaning up UI build artifacts...$(NO_COLOR)"
 	rm -rf ./ui/dist
+	rm -rf ./ui/node_modules
 
 ## Build the Go backend and place the binary in bin directory
 build-backend:
