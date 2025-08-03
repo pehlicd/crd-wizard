@@ -39,6 +39,7 @@ jobs:
           cache-dependency-path: ui/package-lock.json
 
       - name: Install npm dependencies
+        working-directory: ./ui
         run: npm ci
 
       - name: Build and embed UI
