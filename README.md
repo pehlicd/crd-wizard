@@ -24,4 +24,6 @@ CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive 
 
 </div>
 
+---
+
 #TODO: add features and installation methods
