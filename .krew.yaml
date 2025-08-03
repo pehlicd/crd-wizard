@@ -1,0 +1,42 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: crd-wizard
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/pehlicd/crd-wizard
+  platforms:
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: amd64
+      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+      bin: crd-wizard
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: arm64
+      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+      bin: crd-wizard
+    - selector:
+        matchLabels:
+          os: linux
+          arch: amd64
+      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/crd-wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+      bin: crd-wizard
+  shortDescription: A tool to explore Kubernetes CR(D)s via a TUI or web interface.
+  description: |
+    crd-wizard is a powerful CLI application that provides two ways to
+    explore Custom Resource Definitions (CRDs) and Custom Resources (CRs) in your Kubernetes cluster:
+
+      - A beautiful and interactive Terminal User Interface (TUI)
+      - A simple web server providing a JSON API for CRDs
+
+    Usage:
+      If you want to use web UI run command below:
+      kubectl crd-wizard web
+    
+      If you don't want to leave your terminal run:
+      kubectl crd-wizard tui
+
+      Read more documentation at: https://github.com/pehlicd/crd-wizard

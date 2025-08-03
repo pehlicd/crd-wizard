@@ -31,9 +31,9 @@
 !.github/ISSUE_TEMPLATE/*
 
 !.goreleaser.yml
+!.krew.yaml
 
 !Makefile
-!Dockerfile
 
 !assets/*
 !crd-wizard.rb
