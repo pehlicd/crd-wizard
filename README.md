@@ -5,12 +5,12 @@
 
 <h1 align="center">
 CR(D) Wizard
-</h1>
 
 ![go version](https://img.shields.io/github/go-mod/go-version/pehlicd/crd-wizard)
 ![release](https://img.shields.io/github/v/release/pehlicd/crd-wizard?filter=v*)
 ![license](https://img.shields.io/github/license/pehlicd/crd-wizard)
 [![go report](https://goreportcard.com/badge/github.com/pehlicd/crd-wizard)](https://goreportcard.com/report/github.com/pehlicd/crd-wizard)
+</h1>
 
 CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive interface for visualizing and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps developers and cluster administrators quickly understand the state of their custom controllers and the resources they manage.
 
