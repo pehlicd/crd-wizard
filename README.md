@@ -47,3 +47,13 @@ OR if you don't want to leave your terminal run:
 ```shell
 crd-wizard tui
 ```
+
+## How to contribute
+
+If you'd like to contribute to CR(D) Wizard, feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/pehlicd/crd-wizard). Your feedback and contributions are highly appreciated!
+
+
+## License
+
+This project is licensed under the GNU GENERAL PUBLIC LICENSE
+Version 3 - see the [LICENSE](LICENSE) file for details.
