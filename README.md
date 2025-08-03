@@ -27,7 +27,6 @@ CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive 
 ---
 
 ## How to install
----
 
 ### Homebrew
 
