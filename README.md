@@ -26,4 +26,25 @@ CR(D) Wizard is a web based dashboard designed to provide a clear and intuitive 
 
 ---
 
-#TODO: add features and installation methods
+## How to install
+---
+
+### Homebrew
+
+```shell
+brew tap pehlicd/crd-wizard https://github.com/pehlicd/crd-wizard
+brew install crd-wizard
+```
+
+## How to Use
+Using CR(D) Wizard is super simple. Just run the following command:
+
+```shell
+crd-wizard web
+```
+
+OR if you don't want to leave your terminal run:
+
+```shell
+crd-wizard tui
+```
