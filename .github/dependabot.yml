@@ -5,6 +5,10 @@ updates:
     open-pull-requests-limit: 20
     schedule:
       interval: "monthly"
+    groups:
+      kubernetes:
+        patterns:
+          - "k8s.io/*"
   - package-ecosystem: "npm"
     directory: "/ui/"
     open-pull-requests-limit: 20
