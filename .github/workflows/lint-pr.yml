@@ -42,3 +42,13 @@ jobs:
         with:
           header: pr-title-lint-error
           delete: true
+
+  verify-commit-signatures:
+    name: Verify Commit Signatures
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Check for signed commits
+        uses: 1Password/check-signed-commits-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
