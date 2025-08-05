@@ -33,7 +33,7 @@ var tuiCmd = &cobra.Command{
 	Long:  `The TUI provides a rich, interactive experience for navigating CRDs, viewing their instances, and inspecting their definitions and events.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialize the Kubernetes client.
-		client, err := k8s.NewClient(kubeconfig)
+		client, err := k8s.NewClient(kubeconfig, context)
 		if err != nil {
 			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
 			os.Exit(1)
