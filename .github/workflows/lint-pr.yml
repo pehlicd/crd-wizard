@@ -9,11 +9,13 @@ on:
 
 permissions:
   pull-requests: write
+  contents: read
 
 jobs:
-  main:
+  validate-pr-title:
     name: Validate PR title
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: lint_pr_title
         id: lint_pr_title
@@ -40,3 +42,13 @@ jobs:
         with:
           header: pr-title-lint-error
           delete: true
+
+  verify-commit-signatures:
+    name: Verify Commit Signatures
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Check for signed commits
+        uses: 1Password/check-signed-commits-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
