@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@types/dagre": "^0.7.52",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "genkit-cli": "^1.13.0",
