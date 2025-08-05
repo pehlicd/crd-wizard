@@ -40,6 +40,12 @@ brew tap pehlicd/crd-wizard https://github.com/pehlicd/crd-wizard
 brew install crd-wizard
 ```
 
+### Using Go Install
+
+```shell
+go install github.com/pehlicd/crd-wizard@latest
+```
+
 ## How to Use
 Using CR(D) Wizard is super simple. Just run the following command:
 
