@@ -63,6 +63,7 @@ jobs:
           commit_user_name: ${{ steps.import-gpg.outputs.name }}
           commit_user_email: ${{ steps.import-gpg.outputs.email }}
           commit_message: "build(release): release ${{ github.ref_name }}"
+          push_options: "--force"
 
       - name: Move tag to the new commit
         if: startsWith(github.ref, 'refs/tags/') && steps.commit.outputs.changes_detected == 'true'
