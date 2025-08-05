@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
@@ -46,34 +48,59 @@ type Client struct {
 	DiscoveryClient  discovery.DiscoveryInterface
 }
 
-func NewClient(kubeconfigPath string) (*Client, error) {
-	if kubeconfigPath == "" {
-		if home := homedir.HomeDir(); home != "" {
-			kubeconfigPath = filepath.Join(home, ".kube", "config")
+func NewClient(kubeconfigPath, contextName string) (*Client, error) {
+	var config *rest.Config
+	var err error
+
+	config, err = rest.InClusterConfig()
+	if err != nil {
+		if strings.HasPrefix(kubeconfigPath, "~/") {
+			home := homedir.HomeDir()
+			if home == "" {
+				return nil, fmt.Errorf("cannot expand tilde path: user home directory not found")
+			}
+			kubeconfigPath = filepath.Join(home, kubeconfigPath[2:])
+		}
+
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		if kubeconfigPath != "" {
+			loadingRules.ExplicitPath = kubeconfigPath
+		}
+
+		configOverrides := &clientcmd.ConfigOverrides{
+			CurrentContext: contextName,
+		}
+
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+		config, err = kubeConfig.ClientConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error building config for context %q from path %q: %w", contextName, kubeconfigPath, err)
 		}
 	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("error building kubeconfig: %w", err)
-	}
+
 	config.QPS = 100
 	config.Burst = 150
+
 	extensionsClient, err := apiextensionsclientset.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating extensions clientset: %w", err)
 	}
+
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating dynamic client: %w", err)
 	}
+
 	coreClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core clientset: %w", err)
 	}
+
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating discovery client: %w", err)
 	}
+
 	return &Client{
 		ExtensionsClient: extensionsClient,
 		DynamicClient:    dynamicClient,
