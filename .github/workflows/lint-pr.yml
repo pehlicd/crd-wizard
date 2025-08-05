@@ -9,11 +9,13 @@ on:
 
 permissions:
   pull-requests: write
+  contents: read
 
 jobs:
-  main:
+  validate-pr-title:
     name: Validate PR title
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: lint_pr_title
         id: lint_pr_title
