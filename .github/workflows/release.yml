@@ -40,7 +40,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: ./ui
-        run: npm ci
+        run: npm ci --force
 
       - name: Build and embed UI
         run: make build-ui-and-embed
