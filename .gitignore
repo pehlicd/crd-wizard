@@ -34,6 +34,7 @@
 !.krew.yaml
 
 !Makefile
+!Dockerfile
 
 !assets/*
 !crd-wizard.rb
