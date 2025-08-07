@@ -52,3 +52,29 @@ jobs:
         uses: 1Password/check-signed-commits-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          comment: |
+            ⚠️ This PR contains unsigned commits. To get your PR merged, please sign those commits (`git rebase --exec 'git commit -S --amend --no-edit -n' @{upstream}`) and force push them to this branch (`git push --force-with-lease`).
+      
+            If you're new to commit signing, there are different ways to set it up:
+      
+            <details>
+            <summary><b>Sign commits with <code>gpg</code></b></summary>
+            <p></p>
+      
+            Follow the steps below to set up commit signing with `gpg`:
+            1. [Generate a GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
+            2. [Add the GPG key to your GitHub account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account)
+            3. [Configure `git` to use your GPG key for commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key#telling-git-about-your-gpg-key)
+      
+            </details>
+      
+            <details>
+            <summary><b>Sign commits with <code>ssh-agent</code></b></summary>
+            <p></p>
+      
+            Follow the steps below to set up commit signing with `ssh-agent`:
+            1. [Generate an SSH key and add it to `ssh-agent`](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+            2. [Add the SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
+            3. [Configure `git` to use your SSH key for commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key#telling-git-about-your-ssh-key)
+      
+            </details>
