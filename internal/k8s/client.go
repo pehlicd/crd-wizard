@@ -46,6 +46,7 @@ type Client struct {
 	DynamicClient    dynamic.Interface
 	CoreClient       *kubernetes.Clientset
 	DiscoveryClient  discovery.DiscoveryInterface
+	ApiExtClient     *apiextensionsclientset.Clientset
 }
 
 func NewClient(kubeconfigPath, contextName string) (*Client, error) {
@@ -101,11 +102,17 @@ func NewClient(kubeconfigPath, contextName string) (*Client, error) {
 		return nil, fmt.Errorf("error creating discovery client: %w", err)
 	}
 
+	apiExtClient, err := apiextensionsclientset.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create apiextensions client: %w", err)
+	}
+
 	return &Client{
 		ExtensionsClient: extensionsClient,
 		DynamicClient:    dynamicClient,
 		CoreClient:       coreClient,
 		DiscoveryClient:  discoveryClient,
+		ApiExtClient:     apiExtClient,
 	}, nil
 }
 
@@ -163,6 +170,15 @@ func (c *Client) GetSingleCR(ctx context.Context, crdName, namespace, name strin
 		resource = c.DynamicClient.Resource(gvr)
 	}
 	return resource.Get(ctx, name, metav1.GetOptions{})
+}
+
+// GetFullCRD retrieves the complete CustomResourceDefinition object from the cluster.
+func (c *Client) GetFullCRD(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crd, err := c.ApiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return crd, nil
 }
 
 func (c *Client) GetEvents(ctx context.Context, crdName, resourceUID string) ([]corev1.Event, error) {

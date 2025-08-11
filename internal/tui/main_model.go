@@ -55,28 +55,52 @@ func (m mainModel) Init() tea.Cmd { return m.crdListModel.Init() }
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		// Propagate the size message to all models so they can resize correctly
+		// even when not in focus. This is important for the new tabbed view.
+		if m.crdListModel != nil {
+			m.crdListModel, _ = m.crdListModel.Update(msg)
+		}
+		if m.instanceListModel != nil {
+			m.instanceListModel, _ = m.instanceListModel.Update(msg)
+		}
+		if m.detailViewModel != nil {
+			m.detailViewModel, _ = m.detailViewModel.Update(msg)
+		}
+
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+
 	case showInstancesMsg:
 		m.instanceListModel = newInstanceListModel(m.client, msg.crd, m.width, m.height)
 		cmds = append(cmds, m.instanceListModel.Init())
 		m.view = instanceListView
+
 	case showDetailsMsg:
 		m.detailViewModel = newDetailModel(m.client, msg.crd, msg.instance, m.width, m.height)
 		cmds = append(cmds, m.detailViewModel.Init())
 		m.view = detailView
+
 	case goBackMsg:
-		if m.view > crdListView {
-			m.view--
+		// Improved back navigation logic
+		if m.view == detailView {
+			// From an instance's details, go back to the instance list/schema view
+			m.view = instanceListView
+		} else if m.view == instanceListView {
+			// From the instance list/schema view, go back to the CRD list
+			m.view = crdListView
 		}
+
 	case errMsg:
 		m.err = msg.err
 	}
+
+	// Route updates to the active view model
 	switch m.view {
 	case crdListView:
 		m.crdListModel, cmd = m.crdListModel.Update(msg)
@@ -86,6 +110,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.detailViewModel, cmd = m.detailViewModel.Update(msg)
 	}
 	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
