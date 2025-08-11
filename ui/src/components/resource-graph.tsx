@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-import ReactFlow, { MiniMap, Controls, Background, Node, Edge } from 'reactflow';
+import ReactFlow, { Controls, Background, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useToast } from '@/hooks/use-toast';
 import { ResourceGraphData } from '@/lib/crd-data';
@@ -57,7 +57,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://localhost:8080/api/resource-graph?uid=${resourceUid}`, { cache: 'no-store' });
+        const response = await fetch(`/api/resource-graph?uid=${resourceUid}`, { cache: 'no-store' });
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`Failed to fetch graph data: ${response.status} ${errorText}`);
