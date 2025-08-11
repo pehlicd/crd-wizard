@@ -54,6 +54,22 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
+      - name: Update Homebrew Formula
+        run: |
+          FORMULA_FILE="crd-wizard.rb"
+          VERSION="${{ github.ref_name }}"
+          REVISION="${{ github.sha }}"
+
+          echo "Updating formula to version ${VERSION} and revision ${REVISION}"
+
+          # Use sed to update the tag and revision lines in the formula file.
+          # The -i flag edits the file in place.
+          sed -i 's/tag: .*/tag:      "'"${VERSION}"'",/' "${FORMULA_FILE}"
+          sed -i 's/revision: .*/revision: "'"${REVISION}"'"/' "${FORMULA_FILE}"
+
+          echo "Formula file ${FORMULA_FILE} updated:"
+          cat "${FORMULA_FILE}"
+
       - name: "Commit and push changes"
         uses: stefanzweifel/git-auto-commit-action@v6
         id: commit
