@@ -71,11 +71,20 @@ jobs:
           git tag -f ${{ github.ref_name }} ${{ steps.commit.outputs.commit_hash }}
           git push --force origin refs/tags/${{ github.ref_name }}
 
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update Homebrew Formula
         run: |
           FORMULA_FILE="crd-wizard.rb"
           VERSION="${{ github.ref_name }}"
-          REVISION="${{ github.sha }}"
+          REVISION="${{ steps.commit.outputs.commit_hash }}"
 
           echo "Updating formula to version ${VERSION} and revision ${REVISION}"
 
@@ -97,15 +106,6 @@ jobs:
           commit_user_email: ${{ steps.import-gpg.outputs.email }}
           commit_message: "build(release): bump brew formula ${{ github.ref_name }}"
           push_options: "--force"
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Update new version in krew-index
 #        uses: rajatjindal/krew-release-bot@v0.0.47
