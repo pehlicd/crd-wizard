@@ -54,6 +54,23 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
+      - name: "Commit and push changes"
+        uses: stefanzweifel/git-auto-commit-action@v6
+        id: commit
+        with:
+          branch: main
+          commit_author: "${{ steps.import-gpg.outputs.name }} <${{ steps.import-gpg.outputs.email }}>"
+          commit_user_name: ${{ steps.import-gpg.outputs.name }}
+          commit_user_email: ${{ steps.import-gpg.outputs.email }}
+          commit_message: "build(release): release ${{ github.ref_name }}"
+          push_options: "--force"
+
+      - name: Move tag to the new commit
+        if: startsWith(github.ref, 'refs/tags/') && steps.commit.outputs.changes_detected == 'true'
+        run: |
+          git tag -f ${{ github.ref_name }} ${{ steps.commit.outputs.commit_hash }}
+          git push --force origin refs/tags/${{ github.ref_name }}
+
       - name: Update Homebrew Formula
         run: |
           FORMULA_FILE="crd-wizard.rb"
@@ -72,20 +89,14 @@ jobs:
 
       - name: "Commit and push changes"
         uses: stefanzweifel/git-auto-commit-action@v6
-        id: commit
+        id: brew-formula-commit
         with:
           branch: main
           commit_author: "${{ steps.import-gpg.outputs.name }} <${{ steps.import-gpg.outputs.email }}>"
           commit_user_name: ${{ steps.import-gpg.outputs.name }}
           commit_user_email: ${{ steps.import-gpg.outputs.email }}
-          commit_message: "build(release): release ${{ github.ref_name }}"
+          commit_message: "build(release): bump brew formula ${{ github.ref_name }}"
           push_options: "--force"
-
-      - name: Move tag to the new commit
-        if: startsWith(github.ref, 'refs/tags/') && steps.commit.outputs.changes_detected == 'true'
-        run: |
-          git tag -f ${{ github.ref_name }} ${{ steps.commit.outputs.commit_hash }}
-          git push --force origin refs/tags/${{ github.ref_name }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
