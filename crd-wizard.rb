@@ -3,7 +3,7 @@ class CrdWizard < Formula
   homepage "https://github.com/pehlicd/crd-wizard"
   url "https://github.com/pehlicd/crd-wizard.git",
       tag:      "v0.0.0-rc3",
-      revision: "309971ff3c09230d7e55a0b75034d26ef966206f"
+      revision: "e0096ac7f7aaec124834195bc2db63b5fe683d8d"
   license "GPL-3.0"
   head "https://github.com/pehlicd/crd-wizard.git", branch: "main"
 
