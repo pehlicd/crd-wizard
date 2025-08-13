@@ -17,7 +17,7 @@ changelog:
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
     - title: "Documentation Updates"
-      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?chore\(docs\)(\([[:word:]]+\))??!?:.+$'
       order: 2
     - title: "Other Changes"
       regexp: "^(ci|build|misc|perf|deps):"
