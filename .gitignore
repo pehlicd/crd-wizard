@@ -33,6 +33,8 @@
 !.goreleaser.yml
 !.krew.yaml
 
+!install.sh
+
 !Makefile
 
 !assets/*

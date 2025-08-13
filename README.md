@@ -10,6 +10,7 @@ CR(D) Wizard
 ![release](https://img.shields.io/github/v/release/pehlicd/crd-wizard?filter=v*)
 ![license](https://img.shields.io/github/license/pehlicd/crd-wizard)
 [![go report](https://goreportcard.com/badge/github.com/pehlicd/crd-wizard)](https://goreportcard.com/report/github.com/pehlicd/crd-wizard)
+
 </h1>
 
 CR(D) Wizard is a tool designed to provide a clear and intuitive interface for visualizing and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps developers and cluster administrators quickly understand the state of their custom controllers and the resources they manage.
@@ -28,12 +29,31 @@ CR(D) Wizard is available as both a web-based dashboard and a TUI (Text-based Us
 |-----------------------------------------------------------------------------|
 |  <img style="width: 55vw; min-width: 330px; height: 100%;" src="/assets/tui-demo.gif" /> |
 
-
 </div>
 
 ---
 
 ## How to install
+
+### One Script Installer
+You can install the latest version with one command:
+
+```shell
+sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/install.sh')"
+```
+
+#### Advanced Usage
+Install a specific version: Set the CRD_WIZARD_VERSION environment variable.
+
+```shell
+CRD_WIZARD_VERSION="0.0.1" sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/install.sh')"
+```
+
+Install to a custom directory: Pass the desired path as an argument.
+
+```shell
+sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/install.sh')" -- /my/custom/bin
+```
 
 ### Homebrew
 
