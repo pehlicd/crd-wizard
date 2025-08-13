@@ -64,7 +64,6 @@ setup_tmp_dir() {
     cleanup() {
         local code=$?
         set +e
-        info "Cleaning up temporary directory..."
         rm -rf "$TMP_DIR"
         exit $code
     }
