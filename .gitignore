@@ -32,6 +32,7 @@
 
 !.goreleaser.yml
 !.krew.yaml
+!Dockerfile
 
 !install.sh
 
