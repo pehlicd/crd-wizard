@@ -53,7 +53,7 @@ build-ui-and-embed: build-ui
 ## Run Terminal UI
 run-tui:
 	@echo "$(OK_COLOR)==> Running Terminal UI...$(NO_COLOR)"
-	go run . tui --crd test
+	go run . tui
 
 
 ## Build the Go backend and place the binary in bin directory
