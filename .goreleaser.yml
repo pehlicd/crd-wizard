@@ -50,12 +50,39 @@ builds:
       - goos: windows
         goarch: arm64
 
+  - id: kubectl-crd-wizard
+    main: .
+    binary: kubectl-crd_wizard
+    env:
+      - CGO_ENABLED=0
+    ldflags: -s -w -X github.com/pehlicd/crd-wizard/cmd.versionString={{ .Tag }} -X github.com/pehlicd/crd-wizard/cmd.buildDate={{ .Date }} -X github.com/pehlicd/crd-wizard/cmd.buildCommit={{ .Commit }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
 archives:
-  - builds:
+  - id: crd-wizard-archive
+    ids:
       - crd-wizard
     name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     wrap_in_directory: false
-    format: tar.gz
+    formats: ['tar.gz']
+    files:
+      - LICENSE
+
+  - id: kubectl-crd-wizard-archive
+    ids:
+      - kubectl-crd-wizard
+    name_template: "kubectl-crd_wizard_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    wrap_in_directory: false
+    formats: ['tar.gz']
     files:
       - LICENSE
 

@@ -9,8 +9,17 @@ APP_NAME      = crd-wizard
 BIN_DIR       = ./bin
 GO_BUILD      = $(BIN_DIR)/$(APP_NAME)
 
+# Versioning and Build Information
+VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+COMMIT_SHA := $(shell git rev-parse HEAD)
+
+# Define the name and tag for your Docker image.
+IMAGE_NAME ?= $(APP_NAME)
+IMAGE_TAG ?= $(VERSION)
+
 # Main Targets
-.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt create-cluster delete-cluster deploy-ingress-nginx clean
+.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx clean
 
 ## Run the application in serve mode
 run:
@@ -58,6 +67,15 @@ fmt:
 	@echo "$(OK_COLOR)==> Formatting Go code and tidying modules...$(NO_COLOR)"
 	go fmt ./...
 	go mod tidy
+
+## Build docker image
+docker-build:
+	@echo "$(OK_COLOR)==> Building Docker image...$(NO_COLOR)"
+	@docker build \
+      --build-arg VERSION=$(VERSION) \
+      --build-arg BUILD_DATE=$(BUILD_DATE) \
+      --build-arg COMMIT_SHA=$(COMMIT_SHA) \
+      -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 # Kubernetes Cluster Management
 ## Create a Kubernetes cluster using Kind
