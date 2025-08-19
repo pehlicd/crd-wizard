@@ -81,6 +81,23 @@ OR if you don't want to leave your terminal run:
 crd-wizard tui
 ```
 
+## `k9s` [plugin](https://k9scli.io/topics/plugins/)
+
+```yaml
+plugins:
+  crd-wizard:
+    shortCut: Shift-W
+    description: CRD Wizard
+    dangerous: false
+    scopes:
+      - crds
+    command: bash
+    background: false
+    confirm: false
+    args:
+      - -c
+      - "crd-wizard tui --kind $COL-KIND"
+```
 ## How to contribute
 
 If you'd like to contribute to CR(D) Wizard, feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/pehlicd/crd-wizard). Your feedback and contributions are highly appreciated!
