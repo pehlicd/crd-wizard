@@ -25,31 +25,53 @@ import (
 
 // Start initializes and runs the Bubble Tea TUI.
 func Start(client *k8s.Client, crdName string, kind string) error {
-	mainModel := newMainModel(client)
-	p := tea.NewProgram(mainModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	var initialModel tea.Model
 
-	if kind != "" || crdName != "" {
+	// Only search for a specific CRD if at least one flag is provided.
+	if crdName != "" || kind != "" {
+		allCRDs, err := client.GetCRDs(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to get CRDs: %w", err)
+		}
+
 		var targetCRD models.CRD
 		var found bool
 
-		allCRDs, err := client.GetCRDs(context.Background())
-		if err != nil {
-			return err
-		}
-
 		for _, crd := range allCRDs {
-			if (crdName != "" && crd.Name == crdName) || (kind != "" && crd.Kind == kind) {
-				targetCRD = crd
-				found = true
-				break
+			matchesName := crdName != "" && crd.Name == crdName
+			matchesKind := kind != "" && crd.Kind == kind
+
+			// If both flags are set, both must match.
+			if crdName != "" && kind != "" {
+				if matchesName && matchesKind {
+					targetCRD = crd
+					found = true
+					break
+				}
+				// If only one flag is set, either can match.
+			} else {
+				if matchesName || matchesKind {
+					targetCRD = crd
+					found = true
+					break
+				}
 			}
 		}
-		if found {
-			// Set the view to instanceListView and initialize the corresponding model.
-			instanceModel := newInstanceListModelWithActiveTab(client, targetCRD, mainModel.height, mainModel.width, schemaTab)
-			p = tea.NewProgram(instanceModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
+
+		// Check if crd is found
+		if !found {
+			return fmt.Errorf("could not find a matching CRD for name=%q and kind=%q", crdName, kind)
 		}
+
+		initialModel = newInstanceListModelWithActiveTab(client, targetCRD, 0, 0, schemaTab)
 	}
+
+	// If no specific CRD was requested, use the main model.
+	if initialModel == nil {
+		initialModel = newMainModel(client)
+	}
+
+	p := tea.NewProgram(initialModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 	_, err := p.Run()
 	return err
