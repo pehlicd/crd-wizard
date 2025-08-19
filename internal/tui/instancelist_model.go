@@ -92,6 +92,9 @@ type instanceListModel struct {
 }
 
 func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int) instanceListModel {
+	return newInstanceListModelWithActiveTab(client, crd, width, height, instancesTab)
+}
+func newInstanceListModelWithActiveTab(client *k8s.Client, crd models.CRD, width, height int, activeTab tab) instanceListModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
@@ -122,7 +125,7 @@ func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int)
 		loading:   true,
 		width:     width,
 		height:    height,
-		activeTab: instancesTab,
+		activeTab: activeTab,
 	}
 }
 

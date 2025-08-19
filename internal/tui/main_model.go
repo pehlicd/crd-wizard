@@ -17,6 +17,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package tui
 
 import (
+	"context"
+	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -42,15 +44,72 @@ type mainModel struct {
 	detailViewModel   tea.Model
 }
 
-func newMainModel(client *k8s.Client) mainModel {
-	return mainModel{
-		client:       client,
-		view:         crdListView,
-		crdListModel: newCRDListModel(client),
+func newMainModel(client *k8s.Client, crdName, kind string) mainModel {
+
+	// If a CRD name or Kind is provided via flags, fetch it and jump
+	// directly to the instance list view.
+	if crdName != "" || kind != "" {
+		var targetCRD models.CRD
+		var found bool
+		var err error
+
+		// This assumes you have a way to get all CRDs from your client.
+		// You might need to add a method like `GetAllCRDs` to your k8s.Client.
+		// For this example, let's assume `ListCRDs` returns all of them.
+		allCRDs, err := client.GetCRDs(context.Background())
+		if err != nil {
+			return mainModel{
+				client: client,
+				err:    fmt.Errorf("failed to list CRDs to find match: %w", err),
+			}
+		}
+
+		for _, crd := range allCRDs {
+			if (crdName != "" && crd.Name == crdName) || (kind != "" && crd.Kind == kind) {
+				targetCRD = crd
+				found = true
+				break
+			}
+		}
+
+		if found {
+			// Set the view to instanceListView and initialize the corresponding model.
+			return mainModel{
+				client:            client,
+				view:              instanceListView,
+				crdListModel:      newCRDListModel(client),
+				instanceListModel: newInstanceListModel(client, targetCRD, 0, 0), // width/height set later
+			}
+		} else {
+			// Fallback to the default view, the error will be displayed.
+			return mainModel{
+				client:       client,
+				view:         crdListView,
+				crdListModel: newCRDListModel(client),
+				err:          fmt.Errorf("could not find CRD with name '%s' or kind '%s'", crdName, kind),
+			}
+
+		}
+	} else {
+		// Default behavior: start with the CRD list view.
+		return mainModel{
+			client:       client,
+			view:         crdListView,
+			crdListModel: newCRDListModel(client),
+		}
 	}
 }
 
-func (m mainModel) Init() tea.Cmd { return m.crdListModel.Init() }
+func (m mainModel) Init() tea.Cmd {
+	switch m.view {
+	case instanceListView:
+		return m.instanceListModel.Init()
+	case crdListView:
+		return m.crdListModel.Init()
+	default:
+		return nil
+	}
+}
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -94,6 +153,8 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if m.view == instanceListView {
 			// From the instance list/schema view, go back to the CRD list
 			m.view = crdListView
+			// TODO: only do this once!
+			cmds = append(cmds, m.crdListModel.Init())
 		}
 
 	case errMsg:

@@ -50,6 +50,12 @@ build-ui-and-embed: build-ui
 	rm -rf ./ui/dist
 	rm -rf ./ui/node_modules
 
+## Run Terminal UI
+run-tui:
+	@echo "$(OK_COLOR)==> Running Terminal UI...$(NO_COLOR)"
+	go run . tui
+
+
 ## Build the Go backend and place the binary in bin directory
 build-backend:
 	@echo "$(OK_COLOR)==> Building Go backend...$(NO_COLOR)"

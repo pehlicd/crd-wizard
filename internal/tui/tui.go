@@ -18,14 +18,15 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
 
 // Start initializes and runs the Bubble Tea TUI.
-func Start(client *k8s.Client) error {
-	mainModel := newMainModel(client)
+func Start(client *k8s.Client, crdName string, kind string) error {
+	// Pass the flag values to the main model constructor.
+	mainModel := newMainModel(client, crdName, kind)
 	p := tea.NewProgram(mainModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err := p.Run()
 	return err
+
 }

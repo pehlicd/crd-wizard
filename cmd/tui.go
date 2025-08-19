@@ -26,6 +26,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var crd, kind string
+
 // tuiCmd represents the tui command
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
@@ -40,7 +42,7 @@ var tuiCmd = &cobra.Command{
 		}
 
 		// Start the TUI.
-		if err := tui.Start(client); err != nil {
+		if err := tui.Start(client, crd, kind); err != nil {
 			fmt.Printf("❌ TUI Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -48,5 +50,7 @@ var tuiCmd = &cobra.Command{
 }
 
 func init() {
+	tuiCmd.Flags().StringVar(&crd, "crd", "", "custom resource definition (optional)")
+	tuiCmd.Flags().StringVar(&kind, "kind", "", "kind (optional)")
 	rootCmd.AddCommand(tuiCmd)
 }
