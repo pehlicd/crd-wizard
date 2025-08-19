@@ -98,9 +98,18 @@ plugins:
       - -c
       - "crd-wizard tui --kind $COL-KIND"
 ```
+
 ## How to contribute
 
 If you'd like to contribute to CR(D) Wizard, feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/pehlicd/crd-wizard). Your feedback and contributions are highly appreciated!
+
+## Contributors
+
+Thank you for contributing, you're awesome 🫶
+
+<a href="https://github.com/pehlicd/crd-wizard/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=pehlicd/crd-wizard" />
+</a>
 
 
 ## License
