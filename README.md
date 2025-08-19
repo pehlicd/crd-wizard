@@ -81,7 +81,10 @@ OR if you don't want to leave your terminal run:
 crd-wizard tui
 ```
 
-## `k9s` [plugin](https://k9scli.io/topics/plugins/)
+### `k9s` [plugin](https://k9scli.io/topics/plugins/)
+
+> [!IMPORTANT]  
+> This feature not released yet so please install latest version using go install command to use it.
 
 ```yaml
 plugins:
