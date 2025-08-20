@@ -1,13 +1,13 @@
 apiVersion: krew.googlecontainertools.github.com/v1alpha2
 kind: Plugin
 metadata:
-  name: crd-wizard
+  name: crd-explorer
 spec:
   version: {{ .TagName }}
-  homepage: https://github.com/pehlicd/crd-wizard
+  homepage: https://github.com/pehlicd/crd-explorer
   shortDescription: A tool to explore Kubernetes CR(D)s via a TUI or web interface.
   description: |
-    crd-wizard is a powerful CLI application that provides two ways to
+    crd-explorer is a powerful CLI application that provides two ways to
     explore Custom Resource Definitions (CRDs) and Custom Resources (CRs) in your Kubernetes cluster:
 
       - A beautiful and interactive Terminal User Interface (TUI)
@@ -15,40 +15,40 @@ spec:
 
     Usage:
       If you want to use web UI run command below:
-      kubectl crd-wizard web
+      kubectl crd-explorer web
 
       If you don't want to leave your terminal run:
-      kubectl crd-wizard tui
+      kubectl crd-explorer tui
 
-      Read more documentation at: https://github.com/pehlicd/crd-wizard
+      Read more documentation at: https://github.com/pehlicd/crd-explorer
   platforms:
     - selector:
         matchLabels:
           os: darwin
           arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
-      bin: crd-wizard
+      {{addURIAndSha "https://github.com/pehlicd/crd-explorer/releases/download/{{ .TagName }}/kubectl-crd_explorer_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+      bin: crd-explorer
     - selector:
         matchLabels:
           os: darwin
           arch: arm64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
-      bin: crd-wizard
+      {{addURIAndSha "https://github.com/pehlicd/crd-explorer/releases/download/{{ .TagName }}/kubectl-crd_explorer_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+      bin: crd-explorer
     - selector:
         matchLabels:
           os: linux
           arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
-      bin: crd-wizard
+      {{addURIAndSha "https://github.com/pehlicd/crd-explorer/releases/download/{{ .TagName }}/kubectl-crd_explorer_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+      bin: crd-explorer
     - selector:
         matchLabels:
           os: linux
           arch: arm64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
-      bin: crd-wizard
+      {{addURIAndSha "https://github.com/pehlicd/crd-explorer/releases/download/{{ .TagName }}/kubectl-crd_explorer_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
+      bin: crd-explorer
     - selector:
         matchLabels:
           os: windows
           arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
-      bin: crd-wizard.exe
+      {{addURIAndSha "https://github.com/pehlicd/crd-explorer/releases/download/{{ .TagName }}/kubectl-crd_explorer_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+      bin: crd-explorer.exe

@@ -24,9 +24,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "crd-wizard",
+	Use:   "crd-explorer",
 	Short: "A tool to explore Kubernetes CRDs via a TUI or web interface.",
-	Long: `crd-wizard is a powerful CLI application that provides two ways to
+	Long: `crd-explorer is a powerful CLI application that provides two ways to
 explore Custom Resource Definitions (CRDs) in your Kubernetes cluster:
 
 - A beautiful and interactive Terminal User Interface (TUI)

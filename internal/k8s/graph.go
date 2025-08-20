@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-explorer/internal/models"
 )
 
 type graphBuilder struct {

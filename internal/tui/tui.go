@@ -18,7 +18,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-explorer/internal/k8s"
 )
 
 // Start initializes and runs the Bubble Tea TUI.

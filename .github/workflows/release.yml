@@ -82,7 +82,7 @@ jobs:
 
       - name: Update Homebrew Formula
         run: |
-          FORMULA_FILE="crd-wizard.rb"
+          FORMULA_FILE="crd-explorer.rb"
           VERSION="${{ github.ref_name }}"
           REVISION="${{ steps.commit.outputs.commit_hash }}"
 
@@ -127,7 +127,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Docker meta
-        id: crd-wizard
+        id: crd-explorer
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -145,8 +145,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.crd-wizard.outputs.tags }}
-          labels: ${{ steps.crd-wizard.outputs.labels }}
+          tags: ${{ steps.crd-explorer.outputs.tags }}
+          labels: ${{ steps.crd-explorer.outputs.labels }}
           build-args: |
             VERSION=${{ github.ref_name }}
             BUILD_DATE=${{ steps.date.outputs.BUILD_DATE }}

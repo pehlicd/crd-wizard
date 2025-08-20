@@ -39,7 +39,7 @@
 !Makefile
 
 !assets/*
-!crd-wizard.rb
+!crd-explorer.rb
 
 !dev/*
 

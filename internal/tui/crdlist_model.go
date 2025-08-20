@@ -27,8 +27,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
-	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-explorer/internal/k8s"
+	"github.com/pehlicd/crd-explorer/internal/models"
 )
 
 type crdListModel struct {
@@ -182,13 +182,13 @@ func (m crdListModel) View() string {
 	if m.filtering {
 		help = "[Enter/Esc] Confirm/Cancel Filter"
 		finalView = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("️🧙CRD Wizard"),
+			TitleStyle.Render("️CR(D) Explorer"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
 		finalView = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("🧙CRD Wizard - CRD Selector"),
+			TitleStyle.Render("️CR(D) Explorer - CRD Selector"),
 			m.table.View(),
 		)
 	}

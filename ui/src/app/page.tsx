@@ -75,8 +75,8 @@ export default function Home() {
         mobileView === 'list' ? 'flex' : 'hidden'
         )}>
         <header className="p-4 border-b border-border flex items-center gap-2 flex-shrink-0">
-            <Logo className="w-10 h-10 text-primary" />
-            <h1 className="text-xl font-bold font-headline text-primary">CR(D) Wizard</h1>
+            {/*<Logo className="w-10 h-10 text-primary" />*/}
+            <h1 className="text-xl font-bold font-headline text-primary">CR(D) Explorer</h1>
             <div className="ml-auto">
               <ThemeToggle />
             </div>

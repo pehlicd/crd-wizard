@@ -5,7 +5,7 @@ ERROR_COLOR   = \033[31;01m
 WARN_COLOR    = \033[33;01m
 
 # Directories
-APP_NAME      = crd-wizard
+APP_NAME      = crd-explorer
 BIN_DIR       = ./bin
 GO_BUILD      = $(BIN_DIR)/$(APP_NAME)
 
@@ -86,7 +86,7 @@ create-k8s-cluster:
 ## Delete the Kubernetes cluster
 delete-k8s-cluster:
 	@echo "$(OK_COLOR)==> Deleting Kubernetes cluster...$(NO_COLOR)"
-	kind delete cluster -n 'crd-wizard-dev'
+	kind delete cluster -n 'crd-explorer-dev'
 
 ## Deploy NGINX Ingress controller to the cluster
 deploy-ingress-nginx:

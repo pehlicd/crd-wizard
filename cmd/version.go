@@ -32,10 +32,10 @@ var (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version information of crd-wizard",
-	Long:  `This command will print the version information of crd-wizard and exit.`,
+	Short: "Print the version information of crd-explorer",
+	Long:  `This command will print the version information of crd-explorer and exit.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("CR(D) Wizard version: %s\n", versionString)
+		fmt.Printf("CR(D) Explorer version: %s\n", versionString)
 		fmt.Printf("Build date: %s\n", buildDate)
 		fmt.Printf("Build commit: %s\n", buildCommit)
 		os.Exit(0)

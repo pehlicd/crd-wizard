@@ -28,9 +28,9 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-explorer/internal/models"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-explorer/internal/k8s"
 )
 
 //go:embed static/*

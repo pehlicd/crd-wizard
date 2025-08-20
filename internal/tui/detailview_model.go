@@ -35,8 +35,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
-	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-explorer/internal/k8s"
+	"github.com/pehlicd/crd-explorer/internal/models"
 )
 
 type detailViewTab uint

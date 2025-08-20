@@ -16,7 +16,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package main
 
-import "github.com/pehlicd/crd-wizard/cmd"
+import "github.com/pehlicd/crd-explorer/cmd"
 
 func main() {
 	cmd.Execute()

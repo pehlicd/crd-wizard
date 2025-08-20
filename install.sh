@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# The crd-wizard universal installer for Linux and macOS.
+# The crd-explorer universal installer for Linux and macOS.
 
 set -e
 set -o pipefail
 
 GITHUB_USER="pehlicd"
-GITHUB_REPO="crd-wizard"
-BINARY_NAME="crd-wizard"
+GITHUB_REPO="crd-explorer"
+BINARY_NAME="crd-explorer"
 INSTALL_DIR_DEFAULT="/usr/local/bin"
 
 setup_colors() {
@@ -60,7 +60,7 @@ setup_platform() {
 }
 
 setup_tmp_dir() {
-    TMP_DIR=$(mktemp -d -t crd-wizard-install.XXXXXXXXXX)
+    TMP_DIR=$(mktemp -d -t crd-explorer-install.XXXXXXXXXX)
     cleanup() {
         local code=$?
         set +e

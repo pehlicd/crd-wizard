@@ -1,6 +1,6 @@
 version: 2
 
-project_name: crd-wizard
+project_name: crd-explorer
 
 changelog:
   use: github
@@ -33,12 +33,12 @@ before:
     - go mod download
 
 builds:
-  - id: crd-wizard
+  - id: crd-explorer
     main: .
-    binary: crd-wizard
+    binary: crd-explorer
     env:
       - CGO_ENABLED=0
-    ldflags: -s -w -X github.com/pehlicd/crd-wizard/cmd.versionString={{ .Tag }} -X github.com/pehlicd/crd-wizard/cmd.buildDate={{ .Date }} -X github.com/pehlicd/crd-wizard/cmd.buildCommit={{ .Commit }}
+    ldflags: -s -w -X github.com/pehlicd/crd-explorer/cmd.versionString={{ .Tag }} -X github.com/pehlicd/crd-explorer/cmd.buildDate={{ .Date }} -X github.com/pehlicd/crd-explorer/cmd.buildCommit={{ .Commit }}
     goos:
       - linux
       - darwin
@@ -50,12 +50,12 @@ builds:
       - goos: windows
         goarch: arm64
 
-  - id: kubectl-crd-wizard
+  - id: kubectl-crd-explorer
     main: .
-    binary: kubectl-crd_wizard
+    binary: kubectl-crd_explorer
     env:
       - CGO_ENABLED=0
-    ldflags: -s -w -X github.com/pehlicd/crd-wizard/cmd.versionString={{ .Tag }} -X github.com/pehlicd/crd-wizard/cmd.buildDate={{ .Date }} -X github.com/pehlicd/crd-wizard/cmd.buildCommit={{ .Commit }}
+    ldflags: -s -w -X github.com/pehlicd/crd-explorer/cmd.versionString={{ .Tag }} -X github.com/pehlicd/crd-explorer/cmd.buildDate={{ .Date }} -X github.com/pehlicd/crd-explorer/cmd.buildCommit={{ .Commit }}
     goos:
       - linux
       - darwin
@@ -68,19 +68,19 @@ builds:
         goarch: arm64
 
 archives:
-  - id: crd-wizard-archive
+  - id: crd-explorer-archive
     ids:
-      - crd-wizard
+      - crd-explorer
     name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     wrap_in_directory: false
     formats: ['tar.gz']
     files:
       - LICENSE
 
-  - id: kubectl-crd-wizard-archive
+  - id: kubectl-crd-explorer-archive
     ids:
-      - kubectl-crd-wizard
-    name_template: "kubectl-crd_wizard_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+      - kubectl-crd-explorer
+    name_template: "kubectl-crd_explorer_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     wrap_in_directory: false
     formats: ['tar.gz']
     files:
@@ -88,6 +88,6 @@ archives:
 
 release:
   github:
-    name: crd-wizard
+    name: crd-explorer
     owner: pehlicd
   draft: false

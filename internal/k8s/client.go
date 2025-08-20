@@ -38,7 +38,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
-	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-explorer/internal/models"
 )
 
 type Client struct {
@@ -133,6 +133,49 @@ func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {
 	}
 	wg.Wait()
 	return uiCrds, nil
+}
+
+func (c *Client) GetCRDsByKind(ctx context.Context, kind string) ([]models.CRD, error) {
+	allCRDsList, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch CRDs: %w", err)
+	}
+
+	var matchingCRDs []apiextensionsv1.CustomResourceDefinition
+	for _, crd := range allCRDsList.Items {
+		if crd.Spec.Names.Kind == kind {
+			matchingCRDs = append(matchingCRDs, crd)
+		}
+	}
+
+	if len(matchingCRDs) == 0 {
+		return []models.CRD{}, nil
+	}
+
+	filteredCRDs := make([]models.CRD, len(matchingCRDs))
+	var wg sync.WaitGroup
+	for i, crd := range matchingCRDs {
+		wg.Add(1)
+		go func(i int, crd apiextensionsv1.CustomResourceDefinition) {
+			defer wg.Done()
+			instanceCount := c.CountCRDInstances(ctx, crd)
+			filteredCRDs[i] = models.FromK8sCRD(crd, instanceCount)
+		}(i, crd)
+	}
+	wg.Wait()
+
+	return filteredCRDs, nil
+}
+
+func (c *Client) GetCRDsByName(ctx context.Context, name string) (*models.CRD, error) {
+	filteredCRD, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch CRDs with filter: %w", err)
+	}
+
+	crd := models.FromK8sCRD(*filteredCRD, c.CountCRDInstances(ctx, *filteredCRD))
+
+	return &crd, nil
 }
 
 func (c *Client) GetCRsForCRD(ctx context.Context, crdName string) ([]unstructured.Unstructured, error) {

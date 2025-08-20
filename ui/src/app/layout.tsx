@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'CRD Wizard',
+  title: 'CRD Explorer',
   description: 'A simple UI to view Kubernetes CRDs.',
 };
 

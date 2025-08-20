@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
-	"github.com/pehlicd/crd-wizard/internal/tui"
+	"github.com/pehlicd/crd-explorer/internal/k8s"
+	"github.com/pehlicd/crd-explorer/internal/tui"
 
 	"github.com/spf13/cobra"
 )

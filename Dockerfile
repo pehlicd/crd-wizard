@@ -29,15 +29,15 @@ RUN rm -rf ./internal/web/static/* && \
 ENV CGO_ENABLED=0
 
 RUN go build \
-    -ldflags="-s -w -X github.com/pehlicd/crd-wizard/cmd.versionString=${VERSION} -X github.com/pehlicd/crd-wizard/cmd.buildDate=${BUILD_DATE} -X github.com/pehlicd/crd-wizard/cmd.buildCommit=${COMMIT_SHA}" \
-    -o crd-wizard
+    -ldflags="-s -w -X github.com/pehlicd/crd-explorer/cmd.versionString=${VERSION} -X github.com/pehlicd/crd-explorer/cmd.buildDate=${BUILD_DATE} -X github.com/pehlicd/crd-explorer/cmd.buildCommit=${COMMIT_SHA}" \
+    -o crd-explorer
 
 FROM alpine:3.22.1
 
-COPY --from=backend-builder /app/crd-wizard /usr/local/bin/crd-wizard
+COPY --from=backend-builder /app/crd-explorer /usr/local/bin/crd-explorer
 
 ARG PORT=8080
 
-ENTRYPOINT ["crd-wizard"]
+ENTRYPOINT ["crd-explorer"]
 
 CMD ["web", "--port", "${PORT}"]

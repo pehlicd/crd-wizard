@@ -1,4 +1,4 @@
-module github.com/pehlicd/crd-wizard
+module github.com/pehlicd/crd-explorer
 
 go 1.24.4
 
