@@ -24,6 +24,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,16 +40,27 @@ var staticFiles embed.FS
 type Server struct {
 	K8sClient *k8s.Client
 	Router    *http.ServeMux
+	server    *http.Server
 }
 
 func NewServer(client *k8s.Client) *Server {
-	s := &Server{K8sClient: client, Router: http.NewServeMux()}
+	s := &Server{
+		K8sClient: client,
+		Router:    http.NewServeMux(),
+	}
 	s.registerHandlers()
 	return s
 }
 
 func (s *Server) Start(port string) error {
-	return http.ListenAndServe(":"+port, s.Router)
+	s.server = &http.Server{
+		Addr:         ":" + port,
+		Handler:      s.Router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+	return s.server.ListenAndServe()
 }
 
 func (s *Server) registerHandlers() {
@@ -103,7 +115,7 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
-func (s *Server) CrdsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
 	// Note: This re-uses the k8s.GetCRDs which returns the TUI model.
 	// For the API, we want the full spec, so we fetch the raw list and convert.
 	crdList, err := s.K8sClient.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})

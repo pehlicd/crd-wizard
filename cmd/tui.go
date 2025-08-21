@@ -51,7 +51,7 @@ the TUI pre-focused on a specific CRD or Kind.`,
 
   # Launch and focus on a Kind and specific CRD
   crd-wizard tui --crd alertmanagers.monitoring.coreos.com --kind Prometheus`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Initialize the Kubernetes client.
 		client, err := k8s.NewClient(kubeconfig, context)
 		if err != nil {

@@ -18,6 +18,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
 
@@ -28,5 +29,4 @@ func Start(client *k8s.Client, crdName string, kind string) error {
 	p := tea.NewProgram(mainModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err := p.Run()
 	return err
-
 }

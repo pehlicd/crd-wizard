@@ -33,7 +33,7 @@ var webCmd = &cobra.Command{
 	Use:   "web",
 	Short: "Launch a web server to serve CRD data via a JSON API.",
 	Long:  `The web server exposes endpoints to list CRDs, their instances, and related events. It can be used as a backend for a graphical user interface.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		client, err := k8s.NewClient(kubeconfig, context)
 		if err != nil {
 			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)

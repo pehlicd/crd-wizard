@@ -34,5 +34,8 @@ type instancesLoadedMsg struct{ instances []unstructured.Unstructured }
 type fullCRDLoadedMsg struct {
 	def *apiextensionsv1.CustomResourceDefinition
 }
+
+type crdsLoadedMsg struct{ crds []models.CRD }
+
 type goBackMsg struct{}
 type errMsg struct{ err error }

@@ -44,8 +44,6 @@ type crdListModel struct {
 	width, height int
 }
 
-type crdsLoadedMsg struct{ crds []models.CRD }
-
 func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot

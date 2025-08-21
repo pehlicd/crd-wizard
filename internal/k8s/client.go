@@ -45,7 +45,7 @@ type Client struct {
 	DynamicClient    dynamic.Interface
 	CoreClient       *kubernetes.Clientset
 	DiscoveryClient  discovery.DiscoveryInterface
-	ApiExtClient     *apiextensionsclientset.Clientset
+	APIExtClient     *apiextensionsclientset.Clientset
 }
 
 func NewClient(kubeconfigPath, contextName string) (*Client, error) {
@@ -87,7 +87,7 @@ func NewClient(kubeconfigPath, contextName string) (*Client, error) {
 		DynamicClient:    dynamicClient,
 		CoreClient:       coreClient,
 		DiscoveryClient:  discoveryClient,
-		ApiExtClient:     apiExtClient,
+		APIExtClient:     apiExtClient,
 	}, nil
 }
 
@@ -180,7 +180,7 @@ func (c *Client) GetSingleCR(ctx context.Context, crdName, namespace, name strin
 
 // GetFullCRD retrieves the complete CustomResourceDefinition object from the cluster.
 func (c *Client) GetFullCRD(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-	crd, err := c.ApiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+	crd, err := c.APIExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

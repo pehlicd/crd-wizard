@@ -58,10 +58,8 @@ func newMainModel(client *k8s.Client, crdName, kind string) mainModel {
 
 		allCRDs, err := client.GetCRDs(context.Background())
 		if err != nil {
-			return mainModel{
-				client: client,
-				err:    fmt.Errorf("failed to list CRDs to find match: %w", err),
-			}
+			model.err = fmt.Errorf("failed to list CRDs to find match: %w", err)
+			return model
 		}
 
 		for _, crd := range allCRDs {
@@ -119,14 +117,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case goBackMsg:
 		// Improved back navigation logic
-		if m.view == detailView {
-			// From an instance's details, go back to the instance list/schema view
+		switch m.view {
+		case detailView:
 			m.view = instanceListView
-		} else if m.view == instanceListView {
-			// From the instance list/schema view, go back to the CRD list
+		case instanceListView:
 			m.view = crdListView
-			// TODO: only do this once!
-			cmds = append(cmds, m.crdListModel.Init())
+			cmds = append(cmds, m.instanceListModel.Init())
+		default:
+			m.view = instanceListView
 		}
 
 	case errMsg:
