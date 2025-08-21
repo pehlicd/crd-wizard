@@ -36,21 +36,13 @@ import (
 
 type tab int
 
-type instancesLoadedMsg struct{ instances []unstructured.Unstructured }
-type fullCRDLoadedMsg struct {
-	def *apiextensionsv1.CustomResourceDefinition
-}
-
 const (
-	instancesTab tab = iota
-	schemaTab
+	schemaTab tab = iota
+	instancesTab
 )
 
 var (
-	tabStyle         = lipgloss.NewStyle().Padding(0, 2).Margin(0, 1)
-	activeTabStyle   = tabStyle.Background(lipgloss.Color("#7D56F4")).Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
-	inactiveTabStyle = tabStyle.Background(lipgloss.Color("#242424"))
-	tabRowStyle      = lipgloss.NewStyle().Margin(1, 0)
+	tabRowStyle = lipgloss.NewStyle().Margin(1, 0)
 
 	schemaKeyStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Bold(true)
 	schemaTypeStyle = lipgloss.NewStyle().
@@ -92,9 +84,6 @@ type instanceListModel struct {
 }
 
 func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int) instanceListModel {
-	return newInstanceListModelWithActiveTab(client, crd, width, height, instancesTab)
-}
-func newInstanceListModelWithActiveTab(client *k8s.Client, crd models.CRD, width, height int, activeTab tab) instanceListModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
@@ -125,7 +114,7 @@ func newInstanceListModelWithActiveTab(client *k8s.Client, crd models.CRD, width
 		loading:   true,
 		width:     width,
 		height:    height,
-		activeTab: activeTab,
+		activeTab: schemaTab,
 	}
 }
 
@@ -281,12 +270,12 @@ func (m instanceListModel) View() string {
 		return fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err)
 	}
 	title := TitleStyle.Render(fmt.Sprintf("CRD: %s", m.crd.Name))
-	tabHeaders := []string{"Instances", "Schema"}
+	tabHeaders := []string{"Schema", "Instances"}
 	renderedTabs := make([]string, len(tabHeaders))
 	for i, t := range tabHeaders {
-		style := inactiveTabStyle
+		style := InactiveTabStyle
 		if tab(i) == m.activeTab {
-			style = activeTabStyle
+			style = ActiveTabStyle
 		}
 		renderedTabs[i] = style.Render(t)
 	}

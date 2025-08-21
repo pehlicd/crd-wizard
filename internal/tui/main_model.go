@@ -19,8 +19,8 @@ package tui
 import (
 	"context"
 	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/models"
@@ -45,17 +45,17 @@ type mainModel struct {
 }
 
 func newMainModel(client *k8s.Client, crdName, kind string) mainModel {
+	model := mainModel{
+		client:       client,
+		view:         crdListView,
+		crdListModel: newCRDListModel(client, nil),
+	}
 
-	// If a CRD name or Kind is provided via flags, fetch it and jump
-	// directly to the instance list view.
+	// If a CRD name or Kind is provided via flags, fetch it and pre-filter crdList view
 	if crdName != "" || kind != "" {
-		var targetCRD models.CRD
-		var found bool
+		var targetCRD []models.CRD
 		var err error
 
-		// This assumes you have a way to get all CRDs from your client.
-		// You might need to add a method like `GetAllCRDs` to your k8s.Client.
-		// For this example, let's assume `ListCRDs` returns all of them.
 		allCRDs, err := client.GetCRDs(context.Background())
 		if err != nil {
 			return mainModel{
@@ -66,49 +66,21 @@ func newMainModel(client *k8s.Client, crdName, kind string) mainModel {
 
 		for _, crd := range allCRDs {
 			if (crdName != "" && crd.Name == crdName) || (kind != "" && crd.Kind == kind) {
-				targetCRD = crd
-				found = true
-				break
+				targetCRD = append(targetCRD, crd)
 			}
 		}
 
-		if found {
-			// Set the view to instanceListView and initialize the corresponding model.
-			return mainModel{
-				client:            client,
-				view:              instanceListView,
-				crdListModel:      newCRDListModel(client),
-				instanceListModel: newInstanceListModel(client, targetCRD, 0, 0), // width/height set later
-			}
-		} else {
-			// Fallback to the default view, the error will be displayed.
-			return mainModel{
-				client:       client,
-				view:         crdListView,
-				crdListModel: newCRDListModel(client),
-				err:          fmt.Errorf("could not find CRD with name '%s' or kind '%s'", crdName, kind),
-			}
-
-		}
-	} else {
-		// Default behavior: start with the CRD list view.
-		return mainModel{
-			client:       client,
-			view:         crdListView,
-			crdListModel: newCRDListModel(client),
+		if len(targetCRD) != 0 {
+			model.crdListModel = newCRDListModel(client, targetCRD)
+			return model
 		}
 	}
+
+	return model
 }
 
 func (m mainModel) Init() tea.Cmd {
-	switch m.view {
-	case instanceListView:
-		return m.instanceListModel.Init()
-	case crdListView:
-		return m.crdListModel.Init()
-	default:
-		return nil
-	}
+	return m.crdListModel.Init()
 }
 
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -187,11 +159,3 @@ func (m mainModel) View() string {
 		return "Unknown view"
 	}
 }
-
-type showInstancesMsg struct{ crd models.CRD }
-type showDetailsMsg struct {
-	crd      models.CRD
-	instance unstructured.Unstructured
-}
-type goBackMsg struct{}
-type errMsg struct{ err error }

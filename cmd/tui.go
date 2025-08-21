@@ -32,7 +32,25 @@ var crd, kind string
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
 	Short: "Launch the interactive Terminal User Interface to explore CR(D)s.",
-	Long:  `The TUI provides a rich, interactive experience for navigating CRDs, viewing their instances, and inspecting their definitions and events.`,
+	Long: `Launch an interactive Terminal User Interface (TUI) to explore Custom
+Resource Definitions (CRDs) and their corresponding Custom Resources (CRs)
+in your cluster.
+
+The TUI provides a rich experience for navigating CRDs, viewing their
+instances, and inspecting definitions and events. You can optionally start
+the TUI pre-focused on a specific CRD or Kind.`,
+	Example: `
+  # Launch the TUI and browse all CRDs
+  crd-wizard tui
+
+  # Launch and focus directly on a specific CRD
+  crd-wizard tui --crd alertmanagers.monitoring.coreos.com
+
+  # Launch and focus directly on a specific Kind
+  crd-wizard tui --kind Alertmanager
+
+  # Launch and focus on a Kind and specific CRD
+  crd-wizard tui --crd alertmanagers.monitoring.coreos.com --kind Prometheus`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialize the Kubernetes client.
 		client, err := k8s.NewClient(kubeconfig, context)
@@ -50,7 +68,7 @@ var tuiCmd = &cobra.Command{
 }
 
 func init() {
-	tuiCmd.Flags().StringVar(&crd, "crd", "", "custom resource definition (optional)")
-	tuiCmd.Flags().StringVar(&kind, "kind", "", "kind (optional)")
+	tuiCmd.Flags().StringVar(&crd, "crd", "", "Focus on a specific Custom Resource Definition by name (e.g., 'alertmanagers.monitoring.coreos.com') (optional)")
+	tuiCmd.Flags().StringVar(&kind, "kind", "", "Focus on a specific Kind (e.g., 'Prometheus') (optional)")
 	rootCmd.AddCommand(tuiCmd)
 }
