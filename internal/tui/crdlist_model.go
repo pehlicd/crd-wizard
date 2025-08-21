@@ -36,8 +36,8 @@ type crdListModel struct {
 	table         table.Model
 	spinner       spinner.Model
 	textInput     textinput.Model
-	crds          []models.CRD // Master list
-	filteredCRDs  []models.CRD // Displayed list
+	crds          []models.CRD
+	filteredCRDs  []models.CRD
 	loading       bool
 	filtering     bool
 	err           error
@@ -46,7 +46,7 @@ type crdListModel struct {
 
 type crdsLoadedMsg struct{ crds []models.CRD }
 
-func newCRDListModel(client *k8s.Client) crdListModel {
+func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
@@ -72,16 +72,20 @@ func newCRDListModel(client *k8s.Client) crdListModel {
 	ti.Width = 50
 
 	return crdListModel{
-		client:    client,
-		table:     tbl,
-		spinner:   s,
-		textInput: ti,
-		loading:   true,
+		client:       client,
+		table:        tbl,
+		spinner:      s,
+		textInput:    ti,
+		loading:      true,
+		filteredCRDs: targetCRDs,
 	}
 }
 
 func (m crdListModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, func() tea.Msg {
+		if len(m.filteredCRDs) != 0 {
+			return crdsLoadedMsg{m.filteredCRDs}
+		}
 		crds, err := m.client.GetCRDs(context.Background())
 		if err != nil {
 			return errMsg{err}

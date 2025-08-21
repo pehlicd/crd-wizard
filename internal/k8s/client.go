@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -50,33 +49,9 @@ type Client struct {
 }
 
 func NewClient(kubeconfigPath, contextName string) (*Client, error) {
-	var config *rest.Config
-	var err error
-
-	config, err = rest.InClusterConfig()
+	config, err := buildConfig(kubeconfigPath, contextName)
 	if err != nil {
-		if strings.HasPrefix(kubeconfigPath, "~/") {
-			home := homedir.HomeDir()
-			if home == "" {
-				return nil, fmt.Errorf("cannot expand tilde path: user home directory not found")
-			}
-			kubeconfigPath = filepath.Join(home, kubeconfigPath[2:])
-		}
-
-		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		if kubeconfigPath != "" {
-			loadingRules.ExplicitPath = kubeconfigPath
-		}
-
-		configOverrides := &clientcmd.ConfigOverrides{
-			CurrentContext: contextName,
-		}
-
-		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-		config, err = kubeConfig.ClientConfig()
-		if err != nil {
-			return nil, fmt.Errorf("error building config for context %q from path %q: %w", contextName, kubeconfigPath, err)
-		}
+		return nil, err
 	}
 
 	config.QPS = 100
@@ -114,6 +89,37 @@ func NewClient(kubeconfigPath, contextName string) (*Client, error) {
 		DiscoveryClient:  discoveryClient,
 		ApiExtClient:     apiExtClient,
 	}, nil
+}
+
+func buildConfig(kubeconfigPath, contextName string) (*rest.Config, error) {
+	config, err := rest.InClusterConfig()
+	if err == nil {
+		return config, nil
+	}
+
+	if strings.HasPrefix(kubeconfigPath, "~/") {
+		home := homedir.HomeDir()
+		if home == "" {
+			return nil, fmt.Errorf("cannot expand tilde path: user home directory not found")
+		}
+		kubeconfigPath = filepath.Join(home, kubeconfigPath[2:])
+	}
+
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeconfigPath != "" {
+		loadingRules.ExplicitPath = kubeconfigPath
+	}
+
+	configOverrides := &clientcmd.ConfigOverrides{
+		CurrentContext: contextName,
+	}
+
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err = kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error building config for context %q from path %q: %w", contextName, kubeconfigPath, err)
+	}
+	return config, nil
 }
 
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {
@@ -260,25 +266,10 @@ func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVe
 	return schema.GroupVersionResource{}, ""
 }
 
-func HumanReadableAge(t time.Time) string {
-	if t.IsZero() {
-		return "n/a"
-	}
-	d := time.Since(t)
-	if d.Hours() > 24*365 {
-		return fmt.Sprintf("%.0fy", d.Hours()/(24*365))
-	}
-	if d.Hours() > 24*30 {
-		return fmt.Sprintf("%.0fmo", d.Hours()/(24*30))
-	}
-	if d.Hours() > 24 {
-		return fmt.Sprintf("%.0fd", d.Hours()/24)
-	}
-	if d.Hours() >= 1 {
-		return fmt.Sprintf("%.0fh", d.Hours())
-	}
-	if d.Minutes() >= 1 {
-		return fmt.Sprintf("%.0fm", d.Minutes())
-	}
-	return fmt.Sprintf("%.0fs", d.Seconds())
+func (c *Client) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
+	return c.DiscoveryClient.ServerPreferredResources()
+}
+
+func (c *Client) ListResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+	return c.DynamicClient.Resource(gvr).List(context.Background(), metav1.ListOptions{})
 }

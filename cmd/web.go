@@ -40,22 +40,10 @@ var webCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		//stopCh := make(chan struct{})
-		//sigCh := make(chan os.Signal, 1)
-		//signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		//go func() {
-		//	<-sigCh
-		//	fmt.Println("\nShutting down cache...")
-		//	close(stopCh)
-		//}()
-		//
-		//fmt.Println("Starting background cache sync...")
-		//go client.StartCache(stopCh)
-
 		server := web.NewServer(client)
-		fmt.Printf("🚀 Starting web server on port %s...\n", port)
+		fmt.Printf("🚀 Starting web server on http://localhost:%s\n", port)
 		if err := server.Start(port); err != nil {
-			fmt.Printf("🔥 Failed to start web server: %v\n", err)
+			fmt.Printf("❌ Could not start web server: %v\n", err)
 			os.Exit(1)
 		}
 	},
