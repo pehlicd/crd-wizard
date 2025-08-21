@@ -1,0 +1,44 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - gosec
+    - govet
+    - ineffassign
+    - nilerr
+    - promlinter
+    - revive
+    - staticcheck
+    - tparallel
+    - unused
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/pehlicd/crd-wizard
+  exclusions:
+    generated: lax
+    paths:
+      - ui$
+      - third_party$
+      - builtin$
+      - examples$
