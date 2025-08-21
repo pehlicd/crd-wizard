@@ -88,20 +88,28 @@ func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int)
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 
-	tableHeight := height - 8
-	tbl := table.New(
-		table.WithColumns([]table.Column{
-			{Title: "NAME", Width: 40},
-			{Title: "NAMESPACE", Width: 30},
-			{Title: "STATUS", Width: 20},
-			{Title: "AGE", Width: 10},
-		}),
-		table.WithFocused(true),
-		table.WithHeight(tableHeight),
-	)
-	tbl.SetStyles(table.Styles{Header: HeaderStyle, Selected: SelectedStyle})
+	// Initial column widths are placeholders; they will be resized dynamically.
+	cols := []table.Column{
+		{Title: "NAME", Width: 40},
+		{Title: "NAMESPACE", Width: 30},
+		{Title: "STATUS", Width: 20},
+		{Title: "AGE", Width: 10},
+	}
 
-	vp := viewport.New(width, tableHeight)
+	tbl := table.New(
+		table.WithColumns(cols),
+		table.WithFocused(true),
+		table.WithHeight(15), // Placeholder height
+	)
+
+	// IMPORTANT: Set all styles for consistent padding and alignment.
+	tbl.SetStyles(table.Styles{
+		Header:   HeaderStyle,
+		Cell:     CellStyle,
+		Selected: SelectedStyle,
+	})
+
+	vp := viewport.New(width, height-10) // Placeholder dimensions
 	vp.Style = lipgloss.NewStyle().Padding(0, 1)
 	vp.SetContent("Loading schema...")
 
@@ -144,16 +152,14 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		tableHeight := m.height - 8
-		m.table.SetHeight(tableHeight)
-		m.viewport.Width = msg.Width
-		m.viewport.Height = tableHeight
+		m.recalculateLayout()
 		viewportNeedsUpdate = true
 
 	case instancesLoadedMsg:
 		m.loading = false
 		m.instances = msg.instances
 		m.updateTableRows()
+		m.recalculateLayout()
 
 	case fullCRDLoadedMsg:
 		m.fullDefinition = msg.def
@@ -180,7 +186,7 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch msg.String() {
-		case "q":
+		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "b", "esc":
 			return m, func() tea.Msg { return goBackMsg{} }
@@ -205,12 +211,148 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	cmds = append(cmds, cmd)
 
-	// If any state change occurred that affects the schema view, update the viewport now.
 	if viewportNeedsUpdate {
 		m.updateViewportContent()
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m instanceListModel) View() string {
+	if m.err != nil {
+		return AppStyle.Render(fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err))
+	}
+
+	title := TitleStyle.Render(fmt.Sprintf("CRD: %s", m.crd.Name))
+	tabHeaders := []string{"Schema", "Instances"}
+	renderedTabs := make([]string, len(tabHeaders))
+
+	for i, t := range tabHeaders {
+		style := InactiveTabStyle
+		if tab(i) == m.activeTab {
+			style = ActiveTabStyle
+		}
+		renderedTabs[i] = style.Render(t)
+	}
+	tabs := tabRowStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...))
+
+	var tabContent string
+	if m.loading {
+		tabContent = fmt.Sprintf("\n   %s Fetching details for %s...\n\n", m.spinner.View(), m.crd.Kind)
+	} else {
+		switch m.activeTab {
+		case instancesTab:
+			tabContent = m.table.View()
+		case schemaTab:
+			tabContent = m.viewport.View()
+		}
+	}
+
+	help := "[←/→] Switch Tab | [↑/↓] Navigate | [Enter] Expand/Select | [b] Back | [q] Quit"
+	viewContent := lipgloss.JoinVertical(lipgloss.Left, title, tabs, tabContent)
+
+	return AppStyle.Render(viewContent + "\n" + HelpStyle.Render(help))
+}
+
+// Centralized function to handle all sizing and layout calculations.
+func (m *instanceListModel) recalculateLayout() {
+	appHorizontalMargin, appVerticalMargin := AppStyle.GetHorizontalFrameSize(), AppStyle.GetVerticalFrameSize()
+
+	// Calculate height precisely based on the View layout.
+	headerHeight := 3 // Title + Tabs + Tab Margin
+	footerHeight := 2 // Blank line + Help text
+	contentHeight := m.height - appVerticalMargin - headerHeight - footerHeight
+	contentWidth := m.width - appHorizontalMargin
+
+	// Ensure content dimensions are not negative.
+	if contentHeight < 1 {
+		contentHeight = 1
+	}
+	if contentWidth < 1 {
+		contentWidth = 1
+	}
+
+	// Apply new dimensions to table and viewport.
+	m.table.SetHeight(contentHeight)
+	m.viewport.Width = contentWidth
+	m.viewport.Height = contentHeight
+
+	// Dynamically resize table columns based on content.
+	m.table.SetColumns(m.calculateColumnWidths(contentWidth))
+}
+
+// Calculates column widths based on the content of the instances.
+func (m *instanceListModel) calculateColumnWidths(contentWidth int) []table.Column {
+	// Define fixed widths and headers for predictable columns.
+	ageCol := table.Column{Title: "AGE", Width: 10}
+	statusCol := table.Column{Title: "STATUS", Width: 20}
+
+	// Calculate max content width for dynamic columns.
+	maxNameWidth := len("NAME")
+	maxNamespaceWidth := len("NAMESPACE")
+	for _, inst := range m.instances {
+		if len(inst.GetName()) > maxNameWidth {
+			maxNameWidth = len(inst.GetName())
+		}
+		if len(inst.GetNamespace()) > maxNamespaceWidth {
+			maxNamespaceWidth = len(inst.GetNamespace())
+		}
+	}
+
+	// Add a little padding.
+	maxNameWidth += 2
+	maxNamespaceWidth += 2
+
+	// Cap the max widths to prevent a single long name from dominating the screen.
+	if maxNameWidth > 60 {
+		maxNameWidth = 60
+	}
+	if maxNamespaceWidth > 40 {
+		maxNamespaceWidth = 40
+	}
+
+	// The -6 accounts for table borders and separators between 4 columns.
+	availableWidthForDynamicCols := contentWidth - ageCol.Width - statusCol.Width - 6
+
+	// Ensure we don't have negative width. This is the key fix.
+	if availableWidthForDynamicCols < 0 {
+		availableWidthForDynamicCols = 0
+	}
+
+	nameWidth := maxNameWidth
+	namespaceWidth := maxNamespaceWidth
+
+	totalDynamicWidth := nameWidth + namespaceWidth
+
+	// If the content-based widths don't fit, shrink them proportionally.
+	if totalDynamicWidth > availableWidthForDynamicCols {
+		nameRatio := float64(nameWidth) / float64(totalDynamicWidth)
+		nameWidth = int(float64(availableWidthForDynamicCols) * nameRatio)
+		// Give the rest of the space to the namespace column to avoid rounding errors
+		namespaceWidth = availableWidthForDynamicCols - nameWidth
+	} else {
+		// If there's extra space, distribute it proportionally.
+		extraSpace := availableWidthForDynamicCols - totalDynamicWidth
+		if extraSpace > 0 {
+			nameWidth += int(float64(extraSpace) * 0.5)
+			namespaceWidth = availableWidthForDynamicCols - nameWidth
+		}
+	}
+
+	// Final check to prevent negative widths in extreme cases
+	if nameWidth < 0 {
+		nameWidth = 0
+	}
+	if namespaceWidth < 0 {
+		namespaceWidth = 0
+	}
+
+	return []table.Column{
+		{Title: "NAME", Width: nameWidth},
+		{Title: "NAMESPACE", Width: namespaceWidth},
+		statusCol,
+		ageCol,
+	}
 }
 
 // handleSchemaKeys returns true if the view needs to be updated.
@@ -263,37 +405,6 @@ func (m *instanceListModel) updateTableRows() {
 		rows[i] = table.Row{inst.GetName(), inst.GetNamespace(), status, k8s.HumanReadableAge(t)}
 	}
 	m.table.SetRows(rows)
-}
-
-func (m instanceListModel) View() string {
-	if m.err != nil {
-		return fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err)
-	}
-	title := TitleStyle.Render(fmt.Sprintf("CRD: %s", m.crd.Name))
-	tabHeaders := []string{"Schema", "Instances"}
-	renderedTabs := make([]string, len(tabHeaders))
-	for i, t := range tabHeaders {
-		style := InactiveTabStyle
-		if tab(i) == m.activeTab {
-			style = ActiveTabStyle
-		}
-		renderedTabs[i] = style.Render(t)
-	}
-	tabs := tabRowStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...))
-	var tabContent string
-	if m.loading {
-		tabContent = fmt.Sprintf("\n   %s Fetching instances for %s...\n\n", m.spinner.View(), m.crd.Kind)
-	} else {
-		switch m.activeTab {
-		case instancesTab:
-			tabContent = m.table.View()
-		case schemaTab:
-			// The viewport's content is set in Update, so we just View it here.
-			tabContent = m.viewport.View()
-		}
-	}
-	help := "[←/→] Switch Tab | [↑/↓] Navigate | [Enter] Expand/Collapse | [b] Back | [q] Quit"
-	return lipgloss.JoinVertical(lipgloss.Left, title, tabs, tabContent) + "\n" + HelpStyle.Render(help)
 }
 
 func (m *instanceListModel) buildSchemaTree() []*schemaNode {
