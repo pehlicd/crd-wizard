@@ -49,17 +49,24 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 
+	// Define columns with initial (placeholder) widths.
+	// These will be dynamically resized on window size changes.
 	cols := []table.Column{
-		{Title: "KIND", Width: 25},
-		{Title: "FULL NAME", Width: 50},
+		{Title: "KIND", Width: 20},
+		{Title: "FULL NAME", Width: 40},
 		{Title: "INSTANCES", Width: 15},
 	}
 	tbl := table.New(
 		table.WithColumns(cols),
 		table.WithFocused(true),
+		// Set an initial height. This will also be resized.
+		table.WithHeight(15),
 	)
+
+	// Set the styles for all parts of the table for consistent alignment.
 	tbl.SetStyles(table.Styles{
 		Header:   HeaderStyle,
+		Cell:     CellStyle,
 		Selected: SelectedStyle,
 	})
 
@@ -97,8 +104,32 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		// The offset accounts for title, help text, and potential filter bar
-		m.table.SetHeight(m.height - 8)
+		appHorizontalMargin, appVerticalMargin := AppStyle.GetHorizontalFrameSize(), AppStyle.GetVerticalFrameSize()
+
+		headerHeight := 1
+		footerHeight := 2
+
+		verticalSpaceForTable := m.height - appVerticalMargin - headerHeight - footerHeight
+		if m.filtering {
+			verticalSpaceForTable--
+		}
+		m.table.SetHeight(verticalSpaceForTable)
+
+		// Set the width for the table and text input.
+		m.table.SetWidth(m.width - appHorizontalMargin)
+		m.textInput.Width = m.width - appHorizontalMargin
+
+		instancesColWidth := 15
+		remainingWidth := m.table.Width() - instancesColWidth - 4
+		kindColWidth := int(float64(remainingWidth) * 0.35)
+		fullNameColWidth := remainingWidth - kindColWidth
+
+		newColumns := m.table.Columns()
+		newColumns[0].Width = kindColWidth
+		newColumns[1].Width = fullNameColWidth
+		newColumns[2].Width = instancesColWidth
+		m.table.SetColumns(newColumns)
+
 	case crdsLoadedMsg:
 		m.loading = false
 		m.crds = msg.crds
@@ -115,20 +146,20 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.textInput, cmd = m.textInput.Update(msg)
 				m.filterTable()
-				return m, cmd
 			}
-		} else {
-			switch msg.String() {
-			case "q":
-				return m, tea.Quit
-			case "/":
-				m.filtering = true
-				return m, nil
-			case "enter":
-				if m.table.Cursor() < len(m.filteredCRDs) {
-					selectedCRD := m.filteredCRDs[m.table.Cursor()]
-					return m, func() tea.Msg { return showInstancesMsg{crd: selectedCRD} }
-				}
+			return m, cmd
+		}
+
+		switch msg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "/":
+			m.filtering = true
+			return m, nil
+		case "enter":
+			if m.table.Cursor() < len(m.filteredCRDs) {
+				selectedCRD := m.filteredCRDs[m.table.Cursor()]
+				return m, func() tea.Msg { return showInstancesMsg{crd: selectedCRD} }
 			}
 		}
 	}
@@ -178,22 +209,24 @@ func (m crdListModel) View() string {
 		return fmt.Sprintf("\n   %s Fetching CRDs from cluster...\n\n", m.spinner.View())
 	}
 
-	help := "[↑/↓] Navigate | [Enter] Select | [/] Filter | [q] Quit"
-	var finalView string
+	var viewContent string
+	var help string
 
 	if m.filtering {
 		help = "[Enter/Esc] Confirm/Cancel Filter"
-		finalView = lipgloss.JoinVertical(lipgloss.Left,
+		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			TitleStyle.Render("️🧙CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
-		finalView = lipgloss.JoinVertical(lipgloss.Left,
+		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [q] Quit"
+		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			TitleStyle.Render("🧙CRD Wizard - CRD Selector"),
 			m.table.View(),
 		)
 	}
 
-	return finalView + "\n" + HelpStyle.Render(help)
+	// Wrap the entire view in the AppStyle to provide consistent margins.
+	return AppStyle.Render(viewContent + "\n" + HelpStyle.Render(help))
 }
