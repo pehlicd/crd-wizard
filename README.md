@@ -55,6 +55,12 @@ Install to a custom directory: Pass the desired path as an argument.
 sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/install.sh')" -- /my/custom/bin
 ```
 
+### Krew
+
+```shell
+kubectl krew install crd-wizard
+```
+
 ### Homebrew
 
 ```shell
