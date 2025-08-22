@@ -2,8 +2,8 @@ class CrdWizard < Formula
   desc "CR(D) Wizard is a tool to explore Kubernetes CRDs via a TUI or web interface."
   homepage "https://github.com/pehlicd/crd-wizard"
   url "https://github.com/pehlicd/crd-wizard.git",
-      tag:      "v0.0.5",
-      revision: "3d70aae6c3a8bdba5ca43ce665c317c7ac5a0c3a"
+      tag:      "v0.0.6",
+      revision: "e1a4e4fe7cc874af6e5dde69950178e5002712e2"
   license "GPL-3.0"
   head "https://github.com/pehlicd/crd-wizard.git", branch: "main"
 
