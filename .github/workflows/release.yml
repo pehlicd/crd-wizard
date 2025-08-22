@@ -107,8 +107,9 @@ jobs:
           commit_message: "build(release): bump brew formula ${{ github.ref_name }}"
           push_options: "--force"
 
-#      - name: Update new version in krew-index
-#        uses: rajatjindal/krew-release-bot@v0.0.47
+      - name: Update new version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.47
+
   containerize:
     runs-on: ubuntu-latest
     steps:

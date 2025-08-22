@@ -7,48 +7,66 @@ spec:
   homepage: https://github.com/pehlicd/crd-wizard
   shortDescription: A tool to explore Kubernetes CR(D)s via a TUI or web interface.
   description: |
-    crd-wizard is a powerful CLI application that provides two ways to
+    crd-wizard is a powerful kubernetes plugin that provides two ways to
     explore Custom Resource Definitions (CRDs) and Custom Resources (CRs) in your Kubernetes cluster:
 
       - A beautiful and interactive Terminal User Interface (TUI)
       - A simple web server providing a JSON API for CRDs
 
-    Usage:
-      If you want to use web UI run command below:
-      kubectl crd-wizard web
-
-      If you don't want to leave your terminal run:
-      kubectl crd-wizard tui
-
-      Read more documentation at: https://github.com/pehlicd/crd-wizard
+    Read more documentation at: https://github.com/pehlicd/crd-wizard
   platforms:
-    - selector:
-        matchLabels:
-          os: darwin
-          arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
-      bin: crd-wizard
-    - selector:
-        matchLabels:
-          os: darwin
-          arch: arm64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
-      bin: crd-wizard
-    - selector:
-        matchLabels:
-          os: linux
-          arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
-      bin: crd-wizard
-    - selector:
-        matchLabels:
-          os: linux
-          arch: arm64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
-      bin: crd-wizard
-    - selector:
-        matchLabels:
-          os: windows
-          arch: amd64
-      {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
-      bin: crd-wizard.exe
+  - bin: kubectl-crd_wizard
+    {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+    files:
+      - from: LICENSE
+        to: .
+      - from: kubectl-crd_wizard
+        to: .
+    selector:
+      matchLabels:
+        os: darwin
+        arch: arm64
+  - bin: kubectl-crd_wizard
+    {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+    files:
+      - from: LICENSE
+        to: .
+      - from: kubectl-crd_wizard
+        to: .
+    selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+  - bin: kubectl-crd_wizard
+    {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
+    files:
+      - from: LICENSE
+        to: .
+      - from: kubectl-crd_wizard
+        to: .
+    selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+  - bin: kubectl-crd_wizard
+    {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    files:
+      - from: LICENSE
+        to: .
+      - from: kubectl-crd_wizard
+        to: .
+    selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+  - bin: kubectl-crd_wizard.exe
+    {{addURIAndSha "https://github.com/pehlicd/crd-wizard/releases/download/{{ .TagName }}/kubectl-crd_wizard_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+    files:
+      - from: LICENSE
+        to: .
+      - from: kubectl-crd_wizard.exe
+        to: .
+    selector:
+      matchLabels:
+        os: windows
+        arch: amd64
