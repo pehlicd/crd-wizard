@@ -36,8 +36,4 @@ FROM alpine:3.22.1
 
 COPY --from=backend-builder /app/crd-wizard /usr/local/bin/crd-wizard
 
-ARG PORT=8080
-
-ENTRYPOINT ["crd-wizard"]
-
-CMD ["web", "--port", "${PORT}"]
+ENTRYPOINT ["crd-wizard", "web"]
