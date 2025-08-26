@@ -40,9 +40,9 @@ var webCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		server := web.NewServer(client)
-		fmt.Printf("🚀 Starting web server on http://localhost:%s\n", port)
-		if err := server.Start(port); err != nil {
+		server := web.NewServer(client, port)
+		fmt.Printf("🚀 Starting web server on port: %s\n", port)
+		if err := server.Start(); err != nil {
 			fmt.Printf("❌ Could not start web server: %v\n", err)
 			os.Exit(1)
 		}

@@ -39,51 +39,49 @@ var staticFiles embed.FS
 
 type Server struct {
 	K8sClient *k8s.Client
-	Router    *http.ServeMux
+	router    *http.ServeMux
 	server    *http.Server
 }
 
-func NewServer(client *k8s.Client) *Server {
+func NewServer(client *k8s.Client, port string) *Server {
+	r := http.NewServeMux()
 	s := &Server{
 		K8sClient: client,
-		Router:    http.NewServeMux(),
+		router:    r,
+		server: &http.Server{
+			Addr:         ":" + port,
+			Handler:      r,
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  15 * time.Second,
+		},
 	}
 	s.registerHandlers()
 	return s
 }
 
-func (s *Server) Start(port string) error {
-	s.server = &http.Server{
-		Addr:         ":" + port,
-		Handler:      s.Router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  15 * time.Second,
-	}
+func (s *Server) Start() error {
 	return s.server.ListenAndServe()
 }
 
 func (s *Server) registerHandlers() {
-	apiRouter := http.NewServeMux()
+	apiRouter := s.router
 	apiRouter.HandleFunc("/crds", s.CrdsHandler)
 	apiRouter.HandleFunc("/crs", s.CrsHandler)
 	apiRouter.HandleFunc("/cr", s.CrHandler)
 	apiRouter.HandleFunc("/events", s.EventsHandler)
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
-	s.Router.Handle("/api/", http.StripPrefix("/api", apiRouter))
+	s.router.Handle("/api/", http.StripPrefix("/api", apiRouter))
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
 	uiFile := http.FS(staticFS)
-	s.Router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Serve static files from the embedded filesystem
+	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serveStaticFiles(uiFile, w, r, "index.html")
 	})
-	s.Router.HandleFunc("/instances", func(w http.ResponseWriter, r *http.Request) {
-		// Serve static files from the embedded filesystem
+	s.router.HandleFunc("/instances", func(w http.ResponseWriter, r *http.Request) {
 		serveStaticFiles(uiFile, w, r, "instances.html")
 	})
-	s.Router.HandleFunc("/resource", func(w http.ResponseWriter, r *http.Request) {
-		// Serve static files from the embedded filesystem
+	s.router.HandleFunc("/resource", func(w http.ResponseWriter, r *http.Request) {
 		serveStaticFiles(uiFile, w, r, "resource.html")
 	})
 }
@@ -96,7 +94,6 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 
 	file, err := staticFS.Open(path)
 	if err != nil {
-		// If the file is not found, serve the default file (index.html)
 		file, err = staticFS.Open("/" + defaultFile)
 		if err != nil {
 			http.NotFound(w, r)

@@ -12,11 +12,13 @@ GO_BUILD      = $(BIN_DIR)/$(APP_NAME)
 # Versioning and Build Information
 VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-COMMIT_SHA := $(shell git rev-parse HEAD)
+COMMIT_SHA := $(shell git rev-parse --short HEAD)
 
 # Define the name and tag for your Docker image.
-IMAGE_NAME ?= $(APP_NAME)
+IMAGE_NAME ?= ghcr.io/pehlicd/crd-wizard
 IMAGE_TAG ?= $(VERSION)
+
+PLATFORMS ?= linux/amd64,linux/arm64
 
 # Main Targets
 .PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx clean
@@ -46,6 +48,7 @@ build-ui-and-embed: build-ui
 	@echo "$(OK_COLOR)==> Embedding UI files into Go application...$(NO_COLOR)"
 	rm -rf ./internal/web/static/*
 	mv ./ui/dist/* ./internal/web/static/
+	cp ./ui/src/public/logo.svg ./internal/web/static/favicon.ico
 	@echo "$(OK_COLOR)==> Cleaning up UI build artifacts...$(NO_COLOR)"
 	rm -rf ./ui/dist
 	rm -rf ./ui/node_modules
@@ -70,12 +73,16 @@ fmt:
 
 ## Build docker image
 docker-build:
-	@echo "$(OK_COLOR)==> Building Docker image...$(NO_COLOR)"
-	@docker build \
+	@echo "$(OK_COLOR)==> Building multi-arch Docker image for [$(PLATFORMS)]...$(NO_COLOR)"
+	@docker buildx build \
+      --platform $(PLATFORMS) \
       --build-arg VERSION=$(VERSION) \
       --build-arg BUILD_DATE=$(BUILD_DATE) \
       --build-arg COMMIT_SHA=$(COMMIT_SHA) \
-      -t $(IMAGE_NAME):$(IMAGE_TAG) .
+      -t $(IMAGE_NAME):$(IMAGE_TAG) \
+      -t $(IMAGE_NAME):latest \
+      -t $(IMAGE_NAME):$(COMMIT_SHA) \
+      .
 
 # Kubernetes Cluster Management
 ## Create a Kubernetes cluster using Kind
