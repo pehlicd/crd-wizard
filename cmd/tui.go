@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/tui"
 
 	"github.com/spf13/cobra"
@@ -52,8 +53,10 @@ the TUI pre-focused on a specific CRD or Kind.`,
   # Launch and focus on a Kind and specific CRD
   crd-wizard tui --crd alertmanagers.monitoring.coreos.com --kind Prometheus`,
 	Run: func(_ *cobra.Command, _ []string) {
+		log := logger.NewLogger(logFormat, logLevel)
+
 		// Initialize the Kubernetes client.
-		client, err := k8s.NewClient(kubeconfig, context)
+		client, err := k8s.NewClient(kubeconfig, context, log)
 		if err != nil {
 			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
 			os.Exit(1)

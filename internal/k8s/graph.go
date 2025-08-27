@@ -19,7 +19,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -76,7 +75,7 @@ func (b *graphBuilder) buildCaches() error {
 		// The `ServerPreferredResources` endpoint can return partial results even on error.
 		// We log the error but continue processing any resources that were returned.
 		// This is often caused by aggregated API servers being unavailable.
-		log.Printf("graph warning: could not discover all server resources: %v", err)
+		b.client.log.Warn("could not discover all server resources", "err", err)
 	}
 
 	var mu sync.Mutex
@@ -106,7 +105,7 @@ func (b *graphBuilder) buildCaches() error {
 				if err != nil {
 					// It's common to lack permissions for some resources (e.g., cluster-scoped ones),
 					// so we log these as warnings and continue.
-					log.Printf("graph warning: could not list %s: %v", gvr, err)
+					b.client.log.Warn("could not list", "gvr", gvr, "err", err)
 					return nil
 				}
 

@@ -8,7 +8,7 @@ changelog:
   filters:
     exclude:
       - '^Merge pull request'
-      - '^build(release)'
+      - '^build\(release\)'
   groups:
     - title: "Features"
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
