@@ -119,6 +119,7 @@ func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
 	// For the API, we want the full spec, so we fetch the raw list and convert.
 	crdList, err := s.K8sClient.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
+		s.log.Error("error listing CRDs", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
