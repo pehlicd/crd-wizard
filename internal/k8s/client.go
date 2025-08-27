@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
+	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
 )
 
@@ -46,11 +47,13 @@ type Client struct {
 	CoreClient       *kubernetes.Clientset
 	DiscoveryClient  discovery.DiscoveryInterface
 	APIExtClient     *apiextensionsclientset.Clientset
+	log              *logger.Logger
 }
 
-func NewClient(kubeconfigPath, contextName string) (*Client, error) {
+func NewClient(kubeconfigPath, contextName string, log *logger.Logger) (*Client, error) {
 	config, err := buildConfig(kubeconfigPath, contextName)
 	if err != nil {
+		log.Error("error building config", "err", err)
 		return nil, err
 	}
 
@@ -88,6 +91,7 @@ func NewClient(kubeconfigPath, contextName string) (*Client, error) {
 		CoreClient:       coreClient,
 		DiscoveryClient:  discoveryClient,
 		APIExtClient:     apiExtClient,
+		log:              log,
 	}, nil
 }
 
@@ -168,9 +172,6 @@ func (c *Client) GetSingleCR(ctx context.Context, crdName, namespace, name strin
 	}
 	var resource dynamic.ResourceInterface
 	if crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
-		//if namespace == "_cluster" {
-		//	return nil, fmt.Errorf("cannot use '_cluster' for namespaced resource")
-		//}
 		resource = c.DynamicClient.Resource(gvr).Namespace(namespace)
 	} else {
 		resource = c.DynamicClient.Resource(gvr)

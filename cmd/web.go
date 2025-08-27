@@ -17,10 +17,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/web"
 
 	"github.com/spf13/cobra"
@@ -34,16 +34,18 @@ var webCmd = &cobra.Command{
 	Short: "Launch a web server to serve CRD data via a JSON API.",
 	Long:  `The web server exposes endpoints to list CRDs, their instances, and related events. It can be used as a backend for a graphical user interface.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		client, err := k8s.NewClient(kubeconfig, context)
+		log := logger.NewLogger(logFormat, logLevel)
+
+		client, err := k8s.NewClient(kubeconfig, context, log)
 		if err != nil {
-			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
+			log.Error("unable to create k8s client", "err", err)
 			os.Exit(1)
 		}
 
-		server := web.NewServer(client, port)
-		fmt.Printf("🚀 Starting web server on port: %s\n", port)
+		server := web.NewServer(client, port, log)
+		log.Info("starting web server", "port", port)
 		if err := server.Start(); err != nil {
-			fmt.Printf("❌ Could not start web server: %v\n", err)
+			log.Error("error starting web server", "err", err)
 			os.Exit(1)
 		}
 	},
@@ -51,5 +53,6 @@ var webCmd = &cobra.Command{
 
 func init() {
 	webCmd.Flags().StringVarP(&port, "port", "p", "8080", "Port for the web server")
+
 	rootCmd.AddCommand(webCmd)
 }
