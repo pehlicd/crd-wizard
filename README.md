@@ -35,6 +35,19 @@ CR(D) Wizard is available as both a web-based dashboard and a TUI (Text-based Us
 
 ## How to install
 
+### Krew
+
+```shell
+kubectl krew install crd-wizard
+```
+
+### Homebrew
+
+```shell
+brew tap pehlicd/crd-wizard https://github.com/pehlicd/crd-wizard
+brew install crd-wizard
+```
+
 ### One Script Installer
 You can install the latest version with one command:
 
@@ -53,19 +66,6 @@ Install to a custom directory: Pass the desired path as an argument.
 
 ```shell
 sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/install.sh')" -- /my/custom/bin
-```
-
-### Krew
-
-```shell
-kubectl krew install crd-wizard
-```
-
-### Homebrew
-
-```shell
-brew tap pehlicd/crd-wizard https://github.com/pehlicd/crd-wizard
-brew install crd-wizard
 ```
 
 ### Using Go Install
