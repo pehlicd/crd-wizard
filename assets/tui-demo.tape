@@ -66,13 +66,12 @@ Set Width 2400
 Set Height 1200
 
 Type "./crd-wizard tui" Sleep 500ms  Enter
-Sleep 2s Down 1 Sleep 1s Enter
+Sleep 2s Down 5 Sleep 2s Enter
 Sleep 2s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Enter
 Sleep 1s Right 1
 Sleep 1s Down 1 Sleep 1s Enter
-Sleep 2s Left 1
-Sleep 2s Enter
-Down@2s Tab 1 Sleep 1s
+Sleep 4s Right 1
+Down@3s Tab 1 Sleep 1s
 Type "q"
 
 Sleep 500ms
