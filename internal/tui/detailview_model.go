@@ -39,7 +39,7 @@ import (
 	"github.com/pehlicd/crd-wizard/internal/models"
 )
 
-type detailViewTab uint
+type detailViewTab int
 
 const (
 	graphTab detailViewTab = iota
@@ -362,7 +362,7 @@ func (m detailModel) View() string {
 	tabNames := []string{"Graph", "Definition", "Events"}
 	tabs := make([]string, len(tabNames))
 	for i, name := range tabNames {
-		if detailViewTab(uint(i)) == m.activeTab {
+		if detailViewTab(i) == m.activeTab {
 			tabs[i] = ActiveTabStyle.Render(name)
 		} else {
 			tabs[i] = InactiveTabStyle.Render(name)
