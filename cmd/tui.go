@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
@@ -53,7 +54,7 @@ the TUI pre-focused on a specific CRD or Kind.`,
   # Launch and focus on a Kind and specific CRD
   crd-wizard tui --crd alertmanagers.monitoring.coreos.com --kind Prometheus`,
 	Run: func(_ *cobra.Command, _ []string) {
-		log := logger.NewLogger(logFormat, logLevel)
+		log := logger.NewLogger(logFormat, logLevel, io.Discard)
 
 		// Initialize the Kubernetes client.
 		client, err := k8s.NewClient(kubeconfig, context, log)
