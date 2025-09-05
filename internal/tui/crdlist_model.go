@@ -65,7 +65,7 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 
 	// Set the styles for all parts of the table for consistent alignment.
 	tbl.SetStyles(table.Styles{
-		Header:   HeaderStyle,
+		Header:   HeaderStyle.Padding(1, 0, 0),
 		Cell:     CellStyle,
 		Selected: SelectedStyle,
 	})
@@ -161,6 +161,16 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selectedCRD := m.filteredCRDs[m.table.Cursor()]
 				return m, func() tea.Msg { return showInstancesMsg{crd: selectedCRD} }
 			}
+		case "r", "R":
+			m.loading = true
+			m.err = nil
+			return m, func() tea.Msg {
+				crds, err := m.client.GetCRDs(context.Background())
+				if err != nil {
+					return errMsg{err}
+				}
+				return crdsLoadedMsg{crds}
+			}
 		}
 	}
 
@@ -190,7 +200,13 @@ func (m *crdListModel) filterTable() {
 }
 
 func (m *crdListModel) updateTableRows() {
-	rows := make([]table.Row, len(m.filteredCRDs))
+	crdsCount := len(m.filteredCRDs)
+	if crdsCount < 1 {
+		m.table.SetRows([]table.Row{[]string{"No CRD found!", "", ""}})
+		return
+	}
+
+	rows := make([]table.Row, crdsCount)
 	for i, crd := range m.filteredCRDs {
 		instanceText := fmt.Sprintf("%d in use", crd.InstanceCount)
 		if crd.InstanceCount == 0 {
@@ -215,14 +231,14 @@ func (m crdListModel) View() string {
 	if m.filtering {
 		help = "[Enter/Esc] Confirm/Cancel Filter"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("️🧙CRD Wizard"),
+			TitleStyle.Render("️🧙 CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
-		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [q] Quit"
+		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("🧙CRD Wizard - CRD Selector"),
+			TitleStyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),
 		)
 	}

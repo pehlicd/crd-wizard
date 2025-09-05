@@ -19,9 +19,9 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	AppStyle         = lipgloss.NewStyle().Margin(1, 2)
-	TitleStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4")).Bold(true).Margin(0, 1)
-	HelpStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Margin(1, 0)
+	AppStyle         = lipgloss.NewStyle().Margin(1, 2).Border(lipgloss.HiddenBorder(), true).BorderForeground(lipgloss.Color("#7D56F4"))
+	TitleStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4")).Bold(true).Align(lipgloss.Top)
+	HelpStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Margin(1, 0).Align(lipgloss.Bottom)
 	ErrStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5F87")).Bold(true)
 	HeaderStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Bold(true).Padding(0, 1).Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(lipgloss.Color("#7D56F4"))
 	CellStyle        = lipgloss.NewStyle().Padding(0, 1)

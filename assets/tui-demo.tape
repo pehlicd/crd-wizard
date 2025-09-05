@@ -59,8 +59,8 @@ Output assets/tui-demo.gif
 
 Require echo
 
-Set Shell "zsh"
-Set Theme Galaxy
+Set Shell "bash"
+Set Theme Kanagawa
 Set FontSize 28
 Set Width 2400
 Set Height 1200

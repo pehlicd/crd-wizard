@@ -71,7 +71,7 @@ func newDetailModel(client *k8s.Client, crd models.CRD, instance unstructured.Un
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 	vp := viewport.New(width-4, height-8)
-	vp.Style = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true).BorderForeground(lipgloss.Color("#7D56F4"))
+	vp.Style = lipgloss.NewStyle().Margin(0, 1).Border(lipgloss.NormalBorder(), true).BorderForeground(lipgloss.Color("#7D56F4")).Align(lipgloss.Center)
 
 	return detailModel{
 		client:   client,
@@ -170,6 +170,7 @@ func (m *detailModel) switchTabContent() {
 	} else {
 		m.viewport.SetContent(m.eventsContent)
 	}
+	m.viewport.GotoTop()
 }
 
 func (m detailModel) formatEvents() string {
@@ -206,7 +207,7 @@ func (m detailModel) View() string {
 		return fmt.Sprintf("\n   %s Loading details for %s...\n\n", m.spinner.View(), m.instance.GetName())
 	}
 
-	title := fmt.Sprintf("Details for %s: %s/%s", m.crd.Kind, m.instance.GetNamespace(), m.instance.GetName())
+	title := fmt.Sprintf("%s: %s/%s", m.crd.Kind, m.instance.GetNamespace(), m.instance.GetName())
 
 	var tabs []string
 	if m.activeTab == definitionTab {
@@ -218,11 +219,15 @@ func (m detailModel) View() string {
 
 	help := "[↑/↓] Scroll | [Tab] Switch Pane | [b] Back | [q] Quit"
 
-	return lipgloss.JoinVertical(lipgloss.Left,
-		TitleStyle.Render(title),
+	titleStyle := TitleStyle.Margin(0, 0, 1)
+
+	view := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render(title),
 		tabHeader,
 		m.viewport.View(),
 	) + "\n" + HelpStyle.Render(help)
+
+	return AppStyle.Render(view)
 }
 
 func highlightYAML(content string) (string, error) {

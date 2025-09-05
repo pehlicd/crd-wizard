@@ -102,14 +102,13 @@ func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int)
 		table.WithHeight(15), // Placeholder height
 	)
 
-	// IMPORTANT: Set all styles for consistent padding and alignment.
 	tbl.SetStyles(table.Styles{
-		Header:   HeaderStyle,
+		Header:   HeaderStyle.Padding(0, 1, 0),
 		Cell:     CellStyle,
 		Selected: SelectedStyle,
 	})
 
-	vp := viewport.New(width, height-10) // Placeholder dimensions
+	vp := viewport.New(width-4, height-8) // Placeholder dimensions
 	vp.Style = lipgloss.NewStyle().Padding(0, 1)
 	vp.SetContent("Loading schema...")
 
@@ -223,7 +222,8 @@ func (m instanceListModel) View() string {
 		return AppStyle.Render(fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err))
 	}
 
-	title := TitleStyle.Render(fmt.Sprintf("CRD: %s", m.crd.Name))
+	title := TitleStyle.Render(m.crd.Name)
+
 	tabHeaders := []string{"Schema", "Instances"}
 	renderedTabs := make([]string, len(tabHeaders))
 
