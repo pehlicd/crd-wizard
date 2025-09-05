@@ -160,12 +160,12 @@ func (m detailModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b", "esc":
 			return m, func() tea.Msg { return goBackMsg{} }
 		case "tab", "right", "l":
-			m.activeTab = (m.activeTab + 1) % 3 // 3 tabs now
+			m.activeTab = (m.activeTab + 1) % 3
 			m.switchTabContent()
 		case "left", "h":
 			m.activeTab--
 			if m.activeTab < definitionTab {
-				m.activeTab = graphTab // Wrap around to the last tab
+				m.activeTab = graphTab
 			}
 			m.switchTabContent()
 		}
