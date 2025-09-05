@@ -34,7 +34,7 @@ var webCmd = &cobra.Command{
 	Short: "Launch a web server to serve CRD data via a JSON API.",
 	Long:  `The web server exposes endpoints to list CRDs, their instances, and related events. It can be used as a backend for a graphical user interface.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		log := logger.NewLogger(logFormat, logLevel)
+		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
 
 		client, err := k8s.NewClient(kubeconfig, context, log)
 		if err != nil {

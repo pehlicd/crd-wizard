@@ -19,9 +19,9 @@ package logger
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -31,17 +31,17 @@ type Logger struct {
 	*slog.Logger
 }
 
-func NewLogger(format, level string) *Logger {
+func NewLogger(format, level string, writer io.Writer) *Logger {
 	ho := slog.HandlerOptions{Level: leveler(level)}
 
 	var l *slog.Logger
 
 	switch format {
 	case "json":
-		handler := slog.NewJSONHandler(os.Stderr, &ho)
+		handler := slog.NewJSONHandler(writer, &ho)
 		l = slog.New(handler)
 	default:
-		handler := slog.NewTextHandler(os.Stderr, &ho)
+		handler := slog.NewTextHandler(writer, &ho)
 		l = slog.New(handler)
 	}
 
