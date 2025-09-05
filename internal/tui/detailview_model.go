@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -245,16 +244,6 @@ func (m detailModel) formatGraph() string {
 		}
 	}
 
-	// If the initial resource is not a root, it might mean it has parents.
-	// To ensure it's always visible, we check if it's in the root list.
-	// If not, and it has no parents in the visible graph, add it as a root.
-	isInstanceRoot := slices.Contains(roots, string(m.instance.GetUID()))
-	if !isInstanceRoot && !isTarget[string(m.instance.GetUID())] {
-		// This case is unlikely given the graph logic but is a safeguard.
-		// A better approach is to always start rendering from the selected instance.
-		// For now, we will just proceed with the calculated roots.
-	}
-
 	for _, rootID := range roots {
 		m.dfsRender(&b, rootID, "", true, nodes, adj)
 	}
@@ -373,7 +362,7 @@ func (m detailModel) View() string {
 	tabNames := []string{"Graph", "Definition", "Events"}
 	tabs := make([]string, len(tabNames))
 	for i, name := range tabNames {
-		if detailViewTab(i) == m.activeTab {
+		if detailViewTab(uint(i)) == m.activeTab {
 			tabs[i] = ActiveTabStyle.Render(name)
 		} else {
 			tabs[i] = InactiveTabStyle.Render(name)
