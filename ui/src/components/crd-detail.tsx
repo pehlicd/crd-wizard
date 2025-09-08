@@ -34,7 +34,7 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                                 <Badge variant="outline" className="ml-2 font-sans">{propDetails.type}</Badge>
                             </div>
                         </CollapsibleTrigger>
-                        {propDetails.description && <p className="text-muted-foreground mt-1 text-sm pl-6">{propDetails.description}</p>}
+                        {propDetails.description && <p className="text-muted-foreground mt-1 text-sm pl-6 whitespace-pre-wrap">{propDetails.description}</p>}
                         <CollapsibleContent className="pl-4 pt-2">
                             <div className="border-l-2 border-accent pl-4">
                                 {propDetails.properties && renderProperties(propDetails.properties)}
@@ -56,7 +56,7 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                         <span className="font-mono font-medium text-foreground">{propName}</span>
                         <Badge variant="outline" className="ml-2 font-sans">{propDetails.type}</Badge>
                     </div>
-                    {propDetails.description && <p className="text-muted-foreground mt-1 text-sm">{propDetails.description}</p>}
+                    {propDetails.description && <p className="text-muted-foreground mt-1 text-sm whitespace-pre-wrap">{propDetails.description}</p>}
                 </div>
             );
         });
