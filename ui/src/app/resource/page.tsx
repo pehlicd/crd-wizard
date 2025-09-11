@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,6 +15,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, FileJson, History, Share2 } from 'lucide-react';
 import { ResourceGraph } from '@/components/resource-graph';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import YAML from 'js-yaml';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const getStatusBadge = (cr: CustomResource) => {
   const phase = cr.status?.phase;
@@ -37,9 +42,12 @@ function CrDetailView() {
 
   const { toast } = useToast();
 
+  const { resolvedTheme } = useTheme();
+
   const [cr, setCr] = useState<CustomResource | null>(null);
   const [events, setEvents] = useState<K8sEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [format, setFormat] = useState<'json' | 'yaml'>('json');
 
   useEffect(() => {
     if (!crdName || !namespace || !crName) return;
@@ -96,6 +104,20 @@ function CrDetailView() {
 
     fetchData();
   }, [crdName, namespace, crName, toast]);
+
+  const syntaxHighlighterStyle = useMemo(() => {
+    return resolvedTheme === 'dark' ? oneDark : oneLight;
+  }, [resolvedTheme]);
+
+  const jsonString = useMemo(() => {
+    if (!cr) return '';
+    return JSON.stringify(cr, null, 2);
+  }, [cr]);
+
+  const yamlString = useMemo(() => {
+    if (!cr) return '';
+    return YAML.dump(cr);
+  }, [cr]);
 
   if (isLoading) {
     return (
@@ -177,15 +199,29 @@ function CrDetailView() {
         </TabsList>
         <TabsContent value="definition">
           <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
                   <CardTitle>Raw Definition</CardTitle>
                   <CardDescription>The full definition of the resource instance.</CardDescription>
+                </div>
+                <ToggleGroup type="single" defaultValue="json" value={format} onValueChange={(value: string) => { if (value) setFormat(value as 'json' | 'yaml')}}>
+                    <ToggleGroupItem value="json" aria-label="Toggle JSON">JSON</ToggleGroupItem>
+                    <ToggleGroupItem value="yaml" aria-label="Toggle YAML">YAML</ToggleGroupItem>
+                </ToggleGroup>
               </CardHeader>
               <CardContent>
-                  <ScrollArea className="h-[500px] bg-muted p-4 rounded-md">
-                      <pre className="text-xs whitespace-pre-wrap break-all">
-                          {JSON.stringify(cr, null, 2)}
-                      </pre>
+                  <ScrollArea className="h-[500px] bg-muted rounded-md text-xs">
+                      <SyntaxHighlighter
+                        language={format}
+                        style={syntaxHighlighterStyle}
+                        customStyle={{ 
+                            margin: 0,
+                            padding: '1rem',
+                        }}
+                        showLineNumbers
+                      >
+                        {format === 'json' ? jsonString : yamlString}
+                      </SyntaxHighlighter>
                   </ScrollArea>
               </CardContent>
           </Card>
