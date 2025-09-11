@@ -99,7 +99,14 @@ func (m detailModel) Init() tea.Cmd {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
-			yamlBytes, err := yaml.Marshal(m.instance.Object)
+			instance := m.instance.DeepCopy()
+			// Remove managedFields to avoid unnecessary metadata exposure
+			if instance.Object["metadata"] != nil {
+				if metadata, ok := instance.Object["metadata"].(map[string]any); ok {
+					delete(metadata, "managedFields")
+				}
+			}
+			yamlBytes, err := yaml.Marshal(instance.Object)
 			if err != nil {
 				err1 = err
 				return
