@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
@@ -397,9 +396,4 @@ func highlightYAML(content string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
-}
-
-// RFC3339ToTime Small helper in k8s package for time parsing
-func RFC3339ToTime(ts string) (time.Time, error) {
-	return time.Parse(time.RFC3339, ts)
 }

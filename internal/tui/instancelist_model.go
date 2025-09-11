@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
@@ -401,7 +402,7 @@ func (m *instanceListModel) updateTableRows() {
 			status = "Unknown"
 		}
 		ts, _, _ := unstructured.NestedString(inst.Object, "metadata", "creationTimestamp")
-		t, _ := RFC3339ToTime(ts)
+		t, _ := time.Parse(time.RFC3339, ts)
 		rows[i] = table.Row{inst.GetName(), inst.GetNamespace(), status, k8s.HumanReadableAge(t)}
 	}
 	m.table.SetRows(rows)

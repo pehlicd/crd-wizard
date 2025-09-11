@@ -266,11 +266,3 @@ func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVe
 	}
 	return schema.GroupVersionResource{}, ""
 }
-
-func (c *Client) ServerPreferredResources() ([]*metav1.APIResourceList, error) {
-	return c.DiscoveryClient.ServerPreferredResources()
-}
-
-func (c *Client) ListResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
-	return c.DynamicClient.Resource(gvr).List(context.Background(), metav1.ListOptions{})
-}
