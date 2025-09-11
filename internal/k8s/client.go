@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -132,16 +132,18 @@ func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {
 		return nil, fmt.Errorf("failed to fetch CRDs: %w", err)
 	}
 	uiCrds := make([]models.CRD, len(crdList.Items))
-	var wg sync.WaitGroup
+	var g errgroup.Group
 	for i, crd := range crdList.Items {
-		wg.Add(1)
-		go func(i int, crd apiextensionsv1.CustomResourceDefinition) {
-			defer wg.Done()
+		i, crd := i, crd
+		g.Go(func() error {
 			instanceCount := c.CountCRDInstances(ctx, crd)
 			uiCrds[i] = models.FromK8sCRD(crd, instanceCount)
-		}(i, crd)
+			return nil
+		})
 	}
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	return uiCrds, nil
 }
 

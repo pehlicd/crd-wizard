@@ -19,6 +19,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -189,10 +190,5 @@ func (b *graphBuilder) getResourceGraph() *models.ResourceGraph {
 }
 
 func isListable(verbs []string) bool {
-	for _, verb := range verbs {
-		if verb == "list" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(verbs, "list")
 }
