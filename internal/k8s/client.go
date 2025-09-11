@@ -178,7 +178,15 @@ func (c *Client) GetSingleCR(ctx context.Context, crdName, namespace, name strin
 	} else {
 		resource = c.DynamicClient.Resource(gvr)
 	}
-	return resource.Get(ctx, name, metav1.GetOptions{})
+
+	unstructuredCR, err := resource.Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	unstructured.RemoveNestedField(unstructuredCR.Object, "metadata", "managedFields")
+
+	return unstructuredCR, nil
 }
 
 // GetFullCRD retrieves the complete CustomResourceDefinition object from the cluster.
