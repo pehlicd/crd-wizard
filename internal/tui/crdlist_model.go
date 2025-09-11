@@ -65,7 +65,7 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 
 	// Set the styles for all parts of the table for consistent alignment.
 	tbl.SetStyles(table.Styles{
-		Header:   HeaderStyle.Padding(1, 0, 0),
+		Header:   HeaderStyle,
 		Cell:     CellStyle,
 		Selected: SelectedStyle,
 	})
@@ -227,18 +227,19 @@ func (m crdListModel) View() string {
 
 	var viewContent string
 	var help string
+	titlestyle := TitleStyle.PaddingBottom(1)
 
 	if m.filtering {
 		help = "[Enter/Esc] Confirm/Cancel Filter"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("️🧙 CRD Wizard"),
+			titlestyle.Render("️🧙 CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
 		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
-			TitleStyle.Render("🧙 CRD Wizard - CRD Selector"),
+			titlestyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),
 		)
 	}
