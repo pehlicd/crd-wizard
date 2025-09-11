@@ -9,6 +9,7 @@ import { Skeleton } from "./ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Terminal } from "lucide-react"
 import { AnimatedNode } from "./animated-node"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import dagre from "dagre"
 
 interface ResourceGraphProps {
@@ -18,7 +19,7 @@ interface ResourceGraphProps {
 const dagreGraph = new dagre.graphlib.Graph()
 dagreGraph.setDefaultEdgeLabel(() => ({}))
 
-const nodeWidth = 200
+const nodeWidth = 275
 const nodeHeight = 80
 
 const nodeTypes = {
@@ -144,22 +145,24 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
     }
 
     return (
-        <div className="space-y-4">
-            <div style={{ width: "100%", height: "500px" }} className="rounded-md border bg-card overflow-hidden">
-                <ReactFlow
-                    nodes={layoutedNodes}
-                    edges={layoutedEdges}
-                    nodeTypes={nodeTypes}
-                    fitView
-                    fitViewOptions={{ padding: 0.3 }}
-                    defaultEdgeOptions={{
-                        style: { strokeWidth: 2 },
-                    }}
-                >
-                    <Controls className="bg-card border border-border" />
-                    <Background gap={16} size={1} className="opacity-50" />
-                </ReactFlow>
+        <TooltipProvider>
+            <div className="space-y-4">
+                <div style={{ width: "100%", height: "500px" }} className="rounded-md border bg-card overflow-hidden">
+                    <ReactFlow
+                        nodes={layoutedNodes}
+                        edges={layoutedEdges}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        fitViewOptions={{ padding: 0.3 }}
+                        defaultEdgeOptions={{
+                            style: { strokeWidth: 2 },
+                        }}
+                    >
+                        <Controls className="bg-card border border-border" />
+                        <Background gap={16} size={1} className="opacity-50" />
+                    </ReactFlow>
+                </div>
             </div>
-        </div>
+        </TooltipProvider>
     )
 }

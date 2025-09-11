@@ -3,6 +3,7 @@
 import { memo } from "react"
 import { Handle, Position, type NodeProps } from "reactflow"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface AnimatedNodeData {
     label: string
@@ -68,21 +69,28 @@ export const AnimatedNode = memo(({ data }: NodeProps<AnimatedNodeData>) => {
     const colorClass = getNodeColor(nodeType)
 
     return (
-        <div
-            className={cn(
-                "flex flex-col px-4 py-3 rounded-lg border-2 shadow-sm min-w-[180px] max-w-[200px] relative overflow-hidden",
-                colorClass,
-                data.ledAnimation && "led-node",
-            )}
-        >
-            {data.ledAnimation && <div className="absolute inset-0 led-light-overlay rounded-lg pointer-events-none" />}
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div
+                    className={cn(
+                        "flex flex-col px-4 py-3 rounded-lg border-2 shadow-sm min-w-[280px] max-w-[300px] relative overflow-hidden",
+                        colorClass,
+                        data.ledAnimation && "led-node",
+                    )}
+                >
+                    {data.ledAnimation && <div className="absolute inset-0 led-light-overlay rounded-lg pointer-events-none" />}
 
-            <span className="text-xs font-medium uppercase tracking-wide opacity-75 relative z-10">{nodeType}</span>
-            <span className="text-sm font-semibold truncate relative z-10">{nodeName}</span>
+                    <span className="text-xs font-medium uppercase tracking-wide opacity-75 relative z-10">{nodeType}</span>
+                    <span className="text-sm font-semibold truncate relative z-10">{nodeName}</span>
 
-            <Handle type="target" position={Position.Top} className="w-2 h-2 bg-gray-400 border-2 border-white" />
-            <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-gray-400 border-2 border-white" />
-        </div>
+                    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-gray-400 border-2 border-white" />
+                    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-gray-400 border-2 border-white" />
+                </div>
+            </TooltipTrigger>
+            <TooltipContent>
+                <p>{data.label}</p>
+            </TooltipContent>
+        </Tooltip>
     )
 })
 
