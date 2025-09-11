@@ -73,7 +73,7 @@ export const AnimatedNode = memo(({ data }: NodeProps<AnimatedNodeData>) => {
             <TooltipTrigger asChild>
                 <div
                     className={cn(
-                        "flex flex-col px-4 py-3 rounded-lg border-2 shadow-sm min-w-[280px] max-w-[300px] relative overflow-hidden",
+                        "flex flex-col px-4 py-3 rounded-lg border-2 shadow-sm min-w-[280px] max-w-[300px] relative overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-[1.03]",
                         colorClass,
                         data.ledAnimation && "led-node",
                     )}

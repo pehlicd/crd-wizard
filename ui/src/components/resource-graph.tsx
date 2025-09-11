@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import ReactFlow, { Controls, Background, type Node, type Edge, MarkerType } from "reactflow"
 import "reactflow/dist/style.css"
 import { useToast } from "@/hooks/use-toast"
@@ -117,6 +117,37 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
         return getLayoutedElements(initialNodes, initialEdges)
     }, [graphData, ledAnimationEnabled])
 
+    const handleNodeClick = useCallback(
+        (_event: React.MouseEvent, node: Node) => {
+            const label = node.data.label as string
+            if (!label) return
+
+            const nameParts = label.split(": ")
+            // Use the second part as the name, or the full label as a fallback
+            const resourceName = nameParts.length > 1 ? nameParts[1] : label
+
+            navigator.clipboard.writeText(resourceName).then(
+                () => {
+                    toast({
+                        title: "Copied to clipboard! 📋",
+                        description: `Resource name "${resourceName}" has been copied.`,
+                        duration: 3000,
+                    })
+                },
+                (err) => {
+                    console.error("Failed to copy text: ", err)
+                    toast({
+                        variant: "destructive",
+                        title: "Copy failed",
+                        description: "Could not copy the resource name.",
+                        duration: 3000,
+                    })
+                },
+            )
+        },
+        [toast],
+    )
+
     if (isLoading) {
         return <Skeleton className="w-full h-[500px]" />
     }
@@ -152,6 +183,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
                         nodes={layoutedNodes}
                         edges={layoutedEdges}
                         nodeTypes={nodeTypes}
+                        onNodeClick={handleNodeClick}
                         fitView
                         fitViewOptions={{ padding: 0.3 }}
                         defaultEdgeOptions={{
