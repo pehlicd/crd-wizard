@@ -48,6 +48,12 @@ brew tap pehlicd/crd-wizard https://github.com/pehlicd/crd-wizard
 brew install crd-wizard
 ```
 
+### Arch Linux
+
+```shell
+${aurHelper:-paru} -S crd-wizard-bin
+```
+
 ### One Script Installer
 You can install the latest version with one command:
 
