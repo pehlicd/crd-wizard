@@ -116,7 +116,7 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 }
 
 func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
-	clusterName, err := s.K8sClient.GetClusterName(context.Background())
+	clusterName, err := s.K8sClient.GetClusterName()
 	if err != nil {
 		s.log.Error("error getting cluster name", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

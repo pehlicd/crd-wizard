@@ -153,7 +153,7 @@ func buildConfig(kubeconfigPath, contextName string) (*rest.Config, string, erro
 	return clientConfig, clusterName, nil
 }
 
-func (c *Client) GetClusterName(ctx context.Context) (string, error) {
+func (c *Client) GetClusterName() (string, error) {
 	// The name is already stored in the client, so we just return it.
 	if c.ClusterName == "" {
 		return "", fmt.Errorf("cluster name is not available in the client")
