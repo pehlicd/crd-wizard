@@ -47,7 +47,7 @@ function CrDetailView() {
   const [cr, setCr] = useState<CustomResource | null>(null);
   const [events, setEvents] = useState<K8sEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [format, setFormat] = useState<'json' | 'yaml'>('json');
+  const [format, setFormat] = useState<'yaml' | 'json'>('yaml');
 
   useEffect(() => {
     if (!crdName || !namespace || !crName) return;
@@ -204,9 +204,9 @@ function CrDetailView() {
                   <CardTitle>Raw Definition</CardTitle>
                   <CardDescription>The full definition of the resource instance.</CardDescription>
                 </div>
-                <ToggleGroup type="single" defaultValue="json" value={format} onValueChange={(value: string) => { if (value) setFormat(value as 'json' | 'yaml')}}>
-                    <ToggleGroupItem value="json" aria-label="Toggle JSON">JSON</ToggleGroupItem>
+                <ToggleGroup variant="outline" type="single" defaultValue="yaml" value={format} onValueChange={(value: string) => { if (value) setFormat(value as 'yaml' | 'json')}}>
                     <ToggleGroupItem value="yaml" aria-label="Toggle YAML">YAML</ToggleGroupItem>
+                    <ToggleGroupItem value="json" aria-label="Toggle JSON">JSON</ToggleGroupItem>
                 </ToggleGroup>
               </CardHeader>
               <CardContent>

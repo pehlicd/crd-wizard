@@ -47,11 +47,12 @@ type Client struct {
 	CoreClient       *kubernetes.Clientset
 	DiscoveryClient  discovery.DiscoveryInterface
 	APIExtClient     *apiextensionsclientset.Clientset
+	ClusterName      string
 	log              *logger.Logger
 }
 
 func NewClient(kubeconfigPath, contextName string, log *logger.Logger) (*Client, error) {
-	config, err := buildConfig(kubeconfigPath, contextName)
+	config, clusterName, err := buildConfig(kubeconfigPath, contextName)
 	if err != nil {
 		log.Error("error building config", "err", err)
 		return nil, err
@@ -91,20 +92,24 @@ func NewClient(kubeconfigPath, contextName string, log *logger.Logger) (*Client,
 		CoreClient:       coreClient,
 		DiscoveryClient:  discoveryClient,
 		APIExtClient:     apiExtClient,
+		ClusterName:      clusterName,
 		log:              log,
 	}, nil
 }
 
-func buildConfig(kubeconfigPath, contextName string) (*rest.Config, error) {
+func buildConfig(kubeconfigPath, contextName string) (*rest.Config, string, error) {
+	// First, try in-cluster config
 	config, err := rest.InClusterConfig()
 	if err == nil {
-		return config, nil
+		// For in-cluster, there's no kubeconfig context, so we return a default name
+		return config, "in-cluster", nil
 	}
 
+	// Fallback to out-of-cluster config
 	if strings.HasPrefix(kubeconfigPath, "~/") {
 		home := homedir.HomeDir()
 		if home == "" {
-			return nil, fmt.Errorf("cannot expand tilde path: user home directory not found")
+			return nil, "", fmt.Errorf("cannot expand tilde path: user home directory not found")
 		}
 		kubeconfigPath = filepath.Join(home, kubeconfigPath[2:])
 	}
@@ -119,11 +124,41 @@ func buildConfig(kubeconfigPath, contextName string) (*rest.Config, error) {
 	}
 
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err = kubeConfig.ClientConfig()
+
+	// Get the client config
+	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error building config for context %q from path %q: %w", contextName, kubeconfigPath, err)
+		return nil, "", fmt.Errorf("error building client config for context %q from path %q: %w", contextName, kubeconfigPath, err)
 	}
-	return config, nil
+
+	// Get the raw config to find the cluster name from the context
+	rawConfig, err := kubeConfig.RawConfig()
+	if err != nil {
+		return nil, "", fmt.Errorf("error getting raw kubeconfig: %w", err)
+	}
+
+	// Determine which context is being used
+	currentContext := rawConfig.CurrentContext
+	if contextName != "" {
+		currentContext = contextName
+	}
+
+	context, ok := rawConfig.Contexts[currentContext]
+	if !ok {
+		return nil, "", fmt.Errorf("context %q not found in kubeconfig", currentContext)
+	}
+
+	clusterName := context.Cluster
+
+	return clientConfig, clusterName, nil
+}
+
+func (c *Client) GetClusterName() (string, error) {
+	// The name is already stored in the client, so we just return it.
+	if c.ClusterName == "" {
+		return "", fmt.Errorf("cluster name is not available in the client")
+	}
+	return c.ClusterName, nil
 }
 
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {

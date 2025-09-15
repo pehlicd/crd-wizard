@@ -68,6 +68,7 @@ func (s *Server) Start() error {
 
 func (s *Server) registerHandlers() {
 	apiRouter := s.router
+	apiRouter.HandleFunc("/cluster-info", s.ClusterInfoHandler)
 	apiRouter.HandleFunc("/crds", s.CrdsHandler)
 	apiRouter.HandleFunc("/crs", s.CrsHandler)
 	apiRouter.HandleFunc("/cr", s.CrHandler)
@@ -112,6 +113,17 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	}
 
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
+}
+
+func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
+	clusterName, err := s.K8sClient.GetClusterName()
+	if err != nil {
+		s.log.Error("error getting cluster name", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	s.respondWithJSON(w, http.StatusOK, map[string]string{"clusterName": clusterName})
 }
 
 func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
