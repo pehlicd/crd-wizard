@@ -52,10 +52,12 @@ func FromK8sCRD(k8sCrd apiextensionsv1.CustomResourceDefinition, instanceCount i
 }
 
 func ToAPICRD(k8sCrd apiextensionsv1.CustomResourceDefinition, instanceCount int) APICRD {
+	metadata := k8sCrd.ObjectMeta
+	metadata.ManagedFields = nil
 	return APICRD{
 		APIVersion:    k8sCrd.APIVersion,
 		Kind:          k8sCrd.Kind,
-		Metadata:      k8sCrd.ObjectMeta,
+		Metadata:      metadata,
 		Spec:          k8sCrd.Spec,
 		InstanceCount: instanceCount,
 	}
