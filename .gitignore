@@ -16,6 +16,7 @@
 !ui/.eslintrc.json
 !ui/components.json
 !ui/next.config.ts
+!ui/.env.local
 !ui/package.json
 !ui/package-lock.json
 !ui/postcss.config.mjs

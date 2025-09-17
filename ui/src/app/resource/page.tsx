@@ -19,6 +19,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import YAML from 'js-yaml';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { API_BASE_URL } from '@/lib/constants';
 
 const getStatusBadge = (cr: CustomResource) => {
   const phase = cr.status?.phase;
@@ -55,7 +56,7 @@ function CrDetailView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        let fetchUrl = `/api/cr?crdName=${crdName}&name=${crName}`;
+        let fetchUrl = `${API_BASE_URL}/api/cr?crdName=${crdName}&name=${crName}`;
         if (namespace) {
           fetchUrl += `&namespace=${namespace}`;
         }
@@ -74,7 +75,7 @@ function CrDetailView() {
           setCr(crWithId);
 
           if (crWithId.metadata.uid) {
-            const eventsResponse = await fetch(`/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store' });
+            const eventsResponse = await fetch(`${API_BASE_URL}/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store' });
             if (!eventsResponse.ok) {
               const errorText = await eventsResponse.text();
               throw new Error(`Failed to fetch Events: ${eventsResponse.status} ${errorText}`);
