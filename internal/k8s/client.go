@@ -143,12 +143,12 @@ func buildConfig(kubeconfigPath, contextName string) (*rest.Config, string, erro
 		currentContext = contextName
 	}
 
-	context, ok := rawConfig.Contexts[currentContext]
+	c, ok := rawConfig.Contexts[currentContext]
 	if !ok {
 		return nil, "", fmt.Errorf("context %q not found in kubeconfig", currentContext)
 	}
 
-	clusterName := context.Cluster
+	clusterName := c.Cluster
 
 	return clientConfig, clusterName, nil
 }
