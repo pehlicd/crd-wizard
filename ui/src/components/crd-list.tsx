@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import MonacoEditor from '@monaco-editor/react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/constants';
 
 interface CrdListProps {
   crds: CRD[];
@@ -27,6 +28,11 @@ interface CrdListProps {
 export default function CrdList({ crds, searchTerm, setSearchTerm, selectedCrd, onCrdSelect, isLoading }: CrdListProps) {
   const { resolvedTheme } = useTheme();
   const [editorTheme, setEditorTheme] = useState<'light' | 'dark'>('light');
+  const [yamlContent, setYamlContent] = useState('');
+
+  const handleEditorChange = (value: string | undefined) => {
+    setYamlContent(value || '');
+  };
 
   useEffect(() => {
     setEditorTheme(resolvedTheme === 'dark' ? 'dark' : 'light');
@@ -72,8 +78,9 @@ export default function CrdList({ crds, searchTerm, setSearchTerm, selectedCrd, 
                   height="400px"
                   width="100%"
                   defaultLanguage="yaml"
-                  defaultValue="# Paste your CRD YAML here"
+                  defaultValue=""
                   theme={editorTheme}
+                  onChange={handleEditorChange}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 16,
@@ -130,8 +137,49 @@ export default function CrdList({ crds, searchTerm, setSearchTerm, selectedCrd, 
                 <Button
                   type="button"
                   onClick={() => {
-                    // Parse the YAML and create a CRD object, then call onCrdSelect
-                    // For now, just close the dialog
+                    // send the content of the editor to the backend to add the CRD
+                    const code = yamlContent;
+                    if (!code) {
+                      alert('Please enter a CRD in YAML format');
+                      return;
+                    }
+                    // convert YAML to JSON
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const yaml = require('js-yaml');
+                    const doc: any = {};
+                    try {
+                      const doc = yaml.load(code);
+                      if (typeof doc !== 'object' || doc === null) {
+                        alert('Invalid YAML format');
+                        return;
+                      }
+                      if (!('kind' in doc) || doc.kind !== 'CustomResourceDefinition') {
+                        alert('The provided YAML is not a CRD (missing or incorrect kind)');
+                        return;
+                      }
+                    } catch (e) {
+                      alert(`Error parsing YAML: ${e}`);
+                      return;
+                    }
+                    fetch(`${API_BASE_URL}/api/document`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: doc,
+                    }).then((response) => {
+                      if (response.ok) {
+                        const closeButton = document.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
+                        closeButton?.click();
+                        alert('CRD added successfully');
+                      } else {
+                        response.text().then((text) => {
+                          alert(`Error adding CRD: ${text}`);
+                        });
+                      }
+                    }).catch((error) => {
+                      alert(`Error adding CRD: ${error.message}`);
+                    });
                   }}
                 >
                   Generate

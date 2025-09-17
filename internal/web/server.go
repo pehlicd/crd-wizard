@@ -38,10 +38,11 @@ import (
 var staticFiles embed.FS
 
 type Server struct {
-	K8sClient *k8s.Client
-	router    *http.ServeMux
-	server    *http.Server
-	log       *logger.Logger
+	K8sClient    *k8s.Client
+	router       *http.ServeMux
+	server       *http.Server
+	readOnlyCRDs map[string]models.APICRD
+	log          *logger.Logger
 }
 
 func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
@@ -56,7 +57,8 @@ func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  15 * time.Second,
 		},
-		log: log,
+		readOnlyCRDs: make(map[string]models.APICRD),
+		log:          log,
 	}
 	s.registerHandlers()
 	return s
@@ -70,6 +72,7 @@ func (s *Server) registerHandlers() {
 	apiRouter := s.router
 	apiRouter.HandleFunc("/cluster-info", s.ClusterInfoHandler)
 	apiRouter.HandleFunc("/crds", s.CrdsHandler)
+	apiRouter.HandleFunc("/document", s.AddReadOnlyCrdHandler)
 	apiRouter.HandleFunc("/crs", s.CrsHandler)
 	apiRouter.HandleFunc("/cr", s.CrHandler)
 	apiRouter.HandleFunc("/events", s.EventsHandler)
@@ -149,7 +152,34 @@ func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 	wg.Wait()
 
+	// Add read-only CRDs
+	for _, readOnlyCrd := range s.readOnlyCRDs {
+		apiCrds = append(apiCrds, readOnlyCrd)
+	}
+
 	s.respondWithJSON(w, http.StatusOK, apiCrds)
+}
+
+func (s *Server) AddReadOnlyCrdHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	// Decode the CRD from the request body
+	var crd apiextensionsv1.CustomResourceDefinition
+	if err := json.NewDecoder(r.Body).Decode(&crd); err != nil {
+		s.log.Error("error decoding CRD from request body", "err", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	apiCrd := models.ToAPICRD(crd, 0)
+	apiCrd.ReadOnly = true
+	s.readOnlyCRDs[crd.Name] = apiCrd
+
+	s.log.Info("added read-only CRD", "name", crd.Name)
+
+	s.respondWithJSON(w, http.StatusOK, nil)
 }
 
 func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {

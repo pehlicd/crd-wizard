@@ -28,6 +28,7 @@ type APICRD struct {
 	Metadata      metav1.ObjectMeta                            `json:"metadata"`
 	Spec          apiextensionsv1.CustomResourceDefinitionSpec `json:"spec"`
 	InstanceCount int                                          `json:"instanceCount"`
+	ReadOnly      bool                                         `json:"readOnly,omitempty"`
 }
 
 // CRD model is used for the TUI, which only needs a subset of fields.
