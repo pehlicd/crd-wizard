@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { ClusterInfo, CRD } from '@/lib/crd-data';
+import { API_BASE_URL } from '@/lib/constants';
 import CrdList from '@/components/crd-list';
 import CrdDetail from '@/components/crd-detail';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +27,7 @@ export default function Home() {
   async function fetchCrds() {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/crds', { cache: 'no-store' });
+      const response = await fetch(`${API_BASE_URL}/api/crds`, { cache: 'no-store' });
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch CRDs from server: ${response.status} ${errorText}`);
@@ -51,7 +52,7 @@ export default function Home() {
 
   async function fetchClusterInfo() {
     try {
-      const response = await fetch('/api/cluster-info', { cache: 'no-store' });
+      const response = await fetch(`${API_BASE_URL}/api/cluster-info`, { cache: 'no-store' });
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch cluster info from server: ${response.status} ${errorText}`);

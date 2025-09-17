@@ -11,6 +11,7 @@ import { Terminal } from "lucide-react"
 import { AnimatedNode } from "./animated-node"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import dagre from "dagre"
+import { API_BASE_URL } from "@/lib/constants"
 
 interface ResourceGraphProps {
     resourceUid: string
@@ -63,7 +64,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
             setIsLoading(true)
             setError(null)
             try {
-                const response = await fetch(`/api/resource-graph?uid=${resourceUid}`, { cache: "no-store" })
+                const response = await fetch(`${API_BASE_URL}/api/resource-graph?uid=${resourceUid}`, { cache: "no-store" })
                 if (!response.ok) {
                     const errorText = await response.text()
                     throw new Error(`Failed to fetch graph data: ${response.status} ${errorText}`)

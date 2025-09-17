@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Package, Clock, Info } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/constants';
 
 const getStatusBadge = (cr: CustomResource) => {
   const phase = cr.status?.phase;
@@ -42,7 +43,7 @@ function InstancesView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const crsResponse = await fetch(`/api/crs?crdName=${crdName}`, { cache: 'no-store' });
+        const crsResponse = await fetch(`${API_BASE_URL}/api/crs?crdName=${crdName}`, { cache: 'no-store' });
 
         if (!crsResponse.ok) {
           const errorText = await crsResponse.text();
