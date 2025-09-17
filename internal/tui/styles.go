@@ -29,4 +29,9 @@ var (
 	TabStyle         = lipgloss.NewStyle().Padding(0, 1).MarginRight(2)
 	ActiveTabStyle   = TabStyle.Foreground(lipgloss.Color("#F8F8F2")).Background(lipgloss.Color("#7D56F4")).Bold(true)
 	InactiveTabStyle = TabStyle.Foreground(lipgloss.Color("241"))
+	ModalStyle       = lipgloss.NewStyle().
+				BorderStyle(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("#874BFD")).
+				Padding(1, 3).
+				Width(40)
 )

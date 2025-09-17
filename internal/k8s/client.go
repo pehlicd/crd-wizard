@@ -153,12 +153,22 @@ func buildConfig(kubeconfigPath, contextName string) (*rest.Config, string, erro
 	return clientConfig, clusterName, nil
 }
 
-func (c *Client) GetClusterName() (string, error) {
-	// The name is already stored in the client, so we just return it.
-	if c.ClusterName == "" {
-		return "", fmt.Errorf("cluster name is not available in the client")
+func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
+	versionInfo, err := c.DiscoveryClient.ServerVersion()
+	if err != nil {
+		return models.ClusterInfo{}, fmt.Errorf("failed to get server version: %w", err)
 	}
-	return c.ClusterName, nil
+
+	crdList, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return models.ClusterInfo{}, fmt.Errorf("failed to fetch CRDs: %w", err)
+	}
+
+	return models.ClusterInfo{
+		ClusterName:   c.ClusterName,
+		ServerVersion: versionInfo.GitVersion,
+		NumCRDs:       len(crdList.Items),
+	}, nil
 }
 
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {

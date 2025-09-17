@@ -36,6 +36,7 @@ type fullCRDLoadedMsg struct {
 }
 
 type crdsLoadedMsg struct{ crds []models.CRD }
+type showInfoMsg struct{ models.ClusterInfo }
 
 type goBackMsg struct{}
 type errMsg struct{ err error }

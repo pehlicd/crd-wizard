@@ -26,10 +26,16 @@ export interface CRD {
   instanceCount?: number;
 }
 
+export interface ClusterInfo {
+  clusterName: string;
+  serverVersion: string;
+  numCRDs: number;
+}
+
 export interface CustomResource {
   id: string;
   apiVersion: string;
-  kind:string;
+  kind: string;
   metadata: {
     name: string;
     namespace?: string;
@@ -74,17 +80,17 @@ export interface K8sEvent {
 }
 
 export interface GraphNode {
-    id: string;
-    label: string;
-    type: string;
+  id: string;
+  label: string;
+  type: string;
 }
 
 export interface GraphEdge {
-    source: string;
-    target: string;
+  source: string;
+  target: string;
 }
 
 export interface ResourceGraphData {
-    nodes: GraphNode[];
-    edges: GraphEdge[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }

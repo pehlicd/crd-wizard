@@ -116,14 +116,14 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 }
 
 func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
-	clusterName, err := s.K8sClient.GetClusterName()
+	clusterInfo, err := s.K8sClient.GetClusterInfo()
 	if err != nil {
-		s.log.Error("error getting cluster name", "err", err)
+		s.log.Error("error getting cluster info", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	s.respondWithJSON(w, http.StatusOK, map[string]string{"clusterName": clusterName})
+	s.respondWithJSON(w, http.StatusOK, clusterInfo)
 }
 
 func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
@@ -226,7 +226,7 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	s.respondWithJSON(w, http.StatusOK, graph)
 }
 
-func (s *Server) respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func (s *Server) respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
