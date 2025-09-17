@@ -81,3 +81,10 @@ type Edge struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 }
+
+// ClusterInfo holds information about the Kubernetes cluster.
+type ClusterInfo struct {
+	ClusterName   string `json:"clusterName"`
+	ServerVersion string `json:"serverVersion"`
+	NumCRDs       int    `json:"numCRDs"`
+}

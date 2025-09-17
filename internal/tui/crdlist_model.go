@@ -42,6 +42,8 @@ type crdListModel struct {
 	filtering     bool
 	err           error
 	width, height int
+	infoVisible   bool
+	clusterInfo   models.ClusterInfo
 }
 
 func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
@@ -49,8 +51,6 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4"))
 
-	// Define columns with initial (placeholder) widths.
-	// These will be dynamically resized on window size changes.
 	cols := []table.Column{
 		{Title: "KIND", Width: 20},
 		{Title: "FULL NAME", Width: 40},
@@ -59,11 +59,9 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 	tbl := table.New(
 		table.WithColumns(cols),
 		table.WithFocused(true),
-		// Set an initial height. This will also be resized.
 		table.WithHeight(15),
 	)
 
-	// Set the styles for all parts of the table for consistent alignment.
 	tbl.SetStyles(table.Styles{
 		Header:   HeaderStyle,
 		Cell:     CellStyle,
@@ -83,6 +81,7 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 		textInput:    ti,
 		loading:      true,
 		filteredCRDs: targetCRDs,
+		infoVisible:  false,
 	}
 }
 
@@ -115,7 +114,6 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.table.SetHeight(verticalSpaceForTable)
 
-		// Set the width for the table and text input.
 		m.table.SetWidth(m.width - appHorizontalMargin)
 		m.textInput.Width = m.width - appHorizontalMargin
 
@@ -135,10 +133,24 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.crds = msg.crds
 		m.filteredCRDs = msg.crds
 		m.updateTableRows()
+
+	case showInfoMsg:
+		m.clusterInfo = msg.ClusterInfo
+		m.infoVisible = true
+		return m, nil
+
 	case errMsg:
 		m.err = msg.err
 		m.loading = false
+
 	case tea.KeyMsg:
+		if m.infoVisible {
+			switch msg.String() {
+			case "q", "esc", "i":
+				m.infoVisible = false
+			}
+			return m, nil
+		}
 		if m.filtering {
 			switch msg.String() {
 			case "enter", "esc":
@@ -170,6 +182,14 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return errMsg{err}
 				}
 				return crdsLoadedMsg{crds}
+			}
+		case "i", "I":
+			return m, func() tea.Msg {
+				clusterInfo, err := m.client.GetClusterInfo()
+				if err != nil {
+					return errMsg{err}
+				}
+				return showInfoMsg{clusterInfo}
 			}
 		}
 	}
@@ -225,25 +245,40 @@ func (m crdListModel) View() string {
 		return fmt.Sprintf("\n   %s Fetching CRDs from cluster...\n\n", m.spinner.View())
 	}
 
+	if m.infoVisible {
+		// Prepare the content for the modal
+		var infoBuilder strings.Builder
+		infoBuilder.WriteString(TitleStyle.Render("Cluster Information") + "\n\n")
+		infoBuilder.WriteString(fmt.Sprintf("Cluster Name: %s\n", m.clusterInfo.ClusterName))
+		infoBuilder.WriteString(fmt.Sprintf("K8s Version: %s\n", m.clusterInfo.ServerVersion))
+		infoBuilder.WriteString(fmt.Sprintf("CRDs Loaded: %d", len(m.crds)))
+
+		modalContent := ModalStyle.Render(infoBuilder.String())
+		help := HelpStyle.Render("[Esc/q/i] Close Info")
+
+		// Combine modal and help, then center it on the screen
+		finalView := lipgloss.JoinVertical(lipgloss.Center, modalContent, help)
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, finalView)
+	}
+
 	var viewContent string
 	var help string
 	titlestyle := TitleStyle.PaddingBottom(1)
 
 	if m.filtering {
-		help = "[Enter/Esc] Confirm/Cancel Filter"
+		help = "[Enter/Esc] Confirm/Cancel | [↑/↓] Navigate | [r] Refresh | [i] Info | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("️🧙 CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
-		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [q] Quit"
+		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [i] Info | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),
 		)
 	}
 
-	// Wrap the entire view in the AppStyle to provide consistent margins.
 	return AppStyle.Render(viewContent + "\n" + HelpStyle.Render(help))
 }
