@@ -52,7 +52,7 @@ var (
 			Padding(0, 1).
 			MarginLeft(1)
 	schemaDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
-	focusedNodeStyle = lipgloss.NewStyle().Background(lipgloss.Color("236"))
+	focusedNodeStyle = SelectedStyle
 
 	expandIcon   = "▾ "
 	collapseIcon = "▸ "
@@ -551,17 +551,17 @@ func (m *instanceListModel) updateViewportContent() {
 			}
 		}
 
-		line := fmt.Sprintf("%s%s%s %s",
-			indent,
-			icon,
-			schemaKeyStyle.Render(node.name),
-			schemaTypeStyle.Render(node.propType),
-		)
+		// Build the line with indentation and icon (not highlighted)
+		line := fmt.Sprintf("%s%s", indent, icon)
 
-		// Only highlight the main property line
+		// Highlight only the node name if focused, leave indentation and icon unstyled
+		name := schemaKeyStyle.Render(node.name)
 		if i == m.schemaCursor {
-			line = focusedNodeStyle.Render(line)
+			name = focusedNodeStyle.Render(node.name)
 		}
+
+		// Compose the rest of the line
+		line += fmt.Sprintf("%s %s", name, schemaTypeStyle.Render(node.propType))
 		b.WriteString(line + "\n")
 
 		if node.description != "" && (len(node.children) == 0 || node.expanded) {
@@ -570,12 +570,13 @@ func (m *instanceListModel) updateViewportContent() {
 			if descContentWidth < 1 {
 				descContentWidth = 1
 			}
-			// Render with the same wrapping to match height calculation
-			wrappedDesc := lipgloss.NewStyle().Width(descContentWidth).Render(schemaDescStyle.Render(node.description))
-			descLine := fmt.Sprintf("%s%s", descIndentStr, wrappedDesc)
-
-			// Do NOT highlight the description line
-			b.WriteString(descLine + "\n")
+			// Wrap the description text without indentation
+			wrappedDesc := lipgloss.NewStyle().Width(descContentWidth).Render(node.description)
+			// Split into lines and indent each line
+			descLines := strings.Split(wrappedDesc, "\n")
+			for _, line := range descLines {
+				b.WriteString(fmt.Sprintf("%s%s\n", descIndentStr, schemaDescStyle.Render(line)))
+			}
 		}
 	}
 
