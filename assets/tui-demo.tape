@@ -67,7 +67,7 @@ Set Height 1200
 Set TypingSpeed 100ms
 
 Type "./crd-wizard tui" Sleep 500ms  Enter
-Sleep 2s Down 9 Sleep 2s Enter
+Sleep 2s Type "i" Sleep 2s Type "q" Sleep 1s Down 5 Sleep 2s Enter
 Sleep 2s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Down 1 Sleep 1s Enter
 Sleep 1s Right 1
 Sleep 1s Down 1 Sleep 1s Enter
