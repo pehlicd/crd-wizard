@@ -70,7 +70,6 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
     return <div className="p-1">{renderProperties(schema.properties)}</div>;
 };
 
-// This component is now used by ReactMarkdown to render the code blocks
 const CodeBlock = ({ language, code }: { language: string; code: string }) => {
     const [isCopied, setIsCopied] = useState(false);
 
@@ -111,20 +110,16 @@ const CodeBlock = ({ language, code }: { language: string; code: string }) => {
     );
 };
 
-// --- Rewritten AIResponseDisplay using react-markdown ---
 const AIResponseDisplay = ({ response }: { response: string }) => {
     return (
-        // Using Tailwind's typography plugin for nice markdown styling.
-        // You may need to install it: npm install -D @tailwindcss/typography
         <div className="prose prose-sm dark:prose-invert max-w-none">
             <ReactMarkdown
                 components={{
-                    // This function overrides the default `code` renderer.
                     code({ inline, className, children, ...props }: React.HTMLAttributes<HTMLElement> & { inline?: boolean; children?: React.ReactNode }) {
                         const codeString = String(children ?? '');
                         const match = /language-(\w+)/.exec(className || '');
 
-                        if (inline) { // This handles `code`
+                        if (inline) {
                             return (
                                 <code className="font-mono bg-muted px-1 py-0.5 rounded text-foreground" {...props}>
                                     {children}
@@ -132,13 +127,9 @@ const AIResponseDisplay = ({ response }: { response: string }) => {
                             );
                         }
 
-                        // From here, we are dealing with code blocks (```code```)
                         const hasLanguage = match && match[1];
                         const hasMultipleLines = codeString.includes('\n');
 
-                        // If it's a block, but only a single line without a language,
-                        // render it as inline code. This fixes the UI issue where single
-                        // words would appear in a large code block.
                         if (!hasLanguage && !hasMultipleLines) {
                             return (
                                 <code className="font-mono bg-muted px-1 py-0.5 rounded text-foreground" {...props}>
@@ -147,7 +138,6 @@ const AIResponseDisplay = ({ response }: { response: string }) => {
                             );
                         }
 
-                        // Otherwise, render the full, rich code block for multi-line or language-specific code.
                         return <CodeBlock language={hasLanguage ? match[1] : ''} code={codeString.replace(/\n$/, '')} />;
                     }
                 }}
@@ -163,6 +153,28 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
     const [aiResponse, setAiResponse] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAiEnabled, setIsAiEnabled] = useState(false); // State to track AI feature availability
+
+    // Effect to fetch the AI status when the component mounts
+    useEffect(() => {
+        const fetchAiStatus = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/status`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setIsAiEnabled(data.aiEnabled);
+                } else {
+                    console.error('Failed to fetch AI status, disabling AI features.');
+                    setIsAiEnabled(false);
+                }
+            } catch (e) {
+                console.error('Error connecting to API, disabling AI features.', e);
+                setIsAiEnabled(false);
+            }
+        };
+
+        fetchAiStatus();
+    }, []); // Empty dependency array ensures this runs only once on mount
 
     useEffect(() => {
         // Reset AI state whenever the selected CRD changes
@@ -237,7 +249,8 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                                 {crd.spec.names.kind}
                             </CardTitle>
                             <div className="flex items-center gap-2">
-                                <Button onClick={handleGenerateContext} disabled={isLoading}>
+                                {/* The button is now disabled if AI is not enabled or if it's currently loading */}
+                                <Button onClick={handleGenerateContext} disabled={isLoading || !isAiEnabled} title={!isAiEnabled ? "AI features are not enabled by the server." : "Ask AI for insights on this CRD."}>
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -349,4 +362,3 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
         </ScrollArea>
     );
 }
-
