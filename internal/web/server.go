@@ -30,6 +30,7 @@ import (
 
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
+	"github.com/pehlicd/crd-wizard/internal/ollama"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
@@ -52,9 +53,9 @@ func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 		server: &http.Server{
 			Addr:         ":" + port,
 			Handler:      r,
-			ReadTimeout:  15 * time.Second,
-			WriteTimeout: 15 * time.Second,
-			IdleTimeout:  15 * time.Second,
+			ReadTimeout:  15 * time.Minute,
+			WriteTimeout: 15 * time.Minute,
+			IdleTimeout:  15 * time.Minute,
 		},
 		log: log,
 	}
@@ -74,6 +75,7 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/cr", s.CrHandler)
 	apiRouter.HandleFunc("/events", s.EventsHandler)
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
+	apiRouter.HandleFunc("/crd/generate-context", s.GenerateCrdContextHandler)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
@@ -113,6 +115,62 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	}
 
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
+}
+
+// generateContextRequest defines the expected JSON body for the AI context generation endpoint.
+type generateContextRequest struct {
+	Group      string `json:"group"`
+	Version    string `json:"version"`
+	Kind       string `json:"kind"`
+	SchemaJSON string `json:"schemaJSON"`
+}
+
+func (s *Server) GenerateCrdContextHandler(w http.ResponseWriter, r *http.Request) {
+	// Handle CORS preflight requests
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Set CORS header for the actual request
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method != http.MethodPost {
+		s.respondWithJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Only POST method is allowed"})
+		return
+	}
+
+	var reqPayload generateContextRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqPayload); err != nil {
+		s.log.Error("error decoding generate-context request body", "err", err)
+		http.Error(w, "Bad Request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Initialize the Ollama client. The host and model can be made configurable
+	// through your application's settings if needed.
+	ollamaClient := ollama.NewClient()
+
+	generatedText, err := ollamaClient.GenerateCrdContext(
+		r.Context(),
+		reqPayload.Group,
+		reqPayload.Version,
+		reqPayload.Kind,
+		reqPayload.SchemaJSON,
+	)
+	if err != nil {
+		s.log.Error("error generating crd context from ollama", "err", err)
+		http.Error(w, "Error communicating with AI service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// The frontend expects a plain text response.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(generatedText))
 }
 
 func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {

@@ -1,14 +1,15 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import type { CRD } from '@/lib/crd-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Layers, Box, Globe, ChevronRight, ChevronLeft, Package, LayoutList } from 'lucide-react';
-import { Button } from './ui/button';
-import Link from 'next/link';
+import { Layers, Box, Globe, ChevronRight, ChevronLeft, Package, LayoutList, Sparkles, AlertTriangle, Clipboard, ClipboardCheck, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from '@/lib/constants';
 
 interface CrdDetailProps {
   crd: CRD | null;
@@ -29,12 +30,13 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                     <Collapsible key={propName} defaultOpen={false} className="py-3 border-b border-border last:border-b-0">
                         <CollapsibleTrigger className="flex items-center gap-2 text-left w-full group">
                             <ChevronRight className="h-4 w-4 shrink-0 transform transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                            <div className="flex-1">
+                            {/* FIX: Added break-all to prevent long property names from overflowing */}
+                            <div className="flex-1 break-all">
                                 <span className="font-mono font-medium text-foreground">{propName}</span>
                                 <Badge variant="outline" className="ml-2 font-sans">{propDetails.type}</Badge>
                             </div>
                         </CollapsibleTrigger>
-                        {propDetails.description && <p className="text-muted-foreground mt-1 text-sm pl-6 whitespace-pre-wrap">{propDetails.description}</p>}
+                        {propDetails.description && <p className="text-muted-foreground mt-1 text-sm pl-6 whitespace-pre-wrap break-words">{propDetails.description}</p>}
                         <CollapsibleContent className="pl-4 pt-2">
                             <div className="border-l-2 border-accent pl-4">
                                 {propDetails.properties && renderProperties(propDetails.properties)}
@@ -52,11 +54,12 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
 
             return (
                 <div key={propName} className="py-3 border-b border-border last:border-b-0 pl-6">
-                    <div>
+                    {/* FIX: Added break-all to prevent long property names from overflowing */}
+                    <div className="break-all">
                         <span className="font-mono font-medium text-foreground">{propName}</span>
                         <Badge variant="outline" className="ml-2 font-sans">{propDetails.type}</Badge>
                     </div>
-                    {propDetails.description && <p className="text-muted-foreground mt-1 text-sm whitespace-pre-wrap">{propDetails.description}</p>}
+                    {propDetails.description && <p className="text-muted-foreground mt-1 text-sm whitespace-pre-wrap break-words">{propDetails.description}</p>}
                 </div>
             );
         });
@@ -65,8 +68,81 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
     return <div className="p-1">{renderProperties(schema.properties)}</div>;
 };
 
+const AIResponseDisplay = ({ response }: { response: string }) => {
+    const [explanation, setExplanation] = useState('');
+    const [yamlManifest, setYamlManifest] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
+
+    useEffect(() => {
+        const yamlBlockRegex = /```yaml\s*([\s\S]*?)\s*```/;
+        const match = response.match(yamlBlockRegex);
+        if (match) {
+            setYamlManifest(match[1].trim());
+            setExplanation(response.replace(yamlBlockRegex, '').trim());
+        } else {
+            setExplanation(response);
+            setYamlManifest('');
+        }
+    }, [response]);
+    
+    const handleCopy = () => {
+        const textArea = document.createElement("textarea");
+        textArea.value = yamlManifest;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+        document.body.removeChild(textArea);
+    };
+
+    return (
+        <div className="space-y-4">
+            {explanation && (
+                <div>
+                    <h4 className="font-semibold mb-2 text-foreground">Explanation</h4>
+                    <p className="text-muted-foreground text-sm whitespace-pre-wrap">{explanation}</p>
+                </div>
+            )}
+            {yamlManifest && (
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                         <h4 className="font-semibold text-foreground">Example Manifest</h4>
+                         <Button
+                            onClick={handleCopy}
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center gap-2"
+                        >
+                            {isCopied ? (
+                                <ClipboardCheck className="h-4 w-4 text-green-500" />
+                            ) : (
+                                <Clipboard className="h-4 w-4" />
+                            )}
+                            {isCopied ? 'Copied!' : 'Copy'}
+                         </Button>
+                    </div>
+                    {/* FIX: Added break-all to the pre tag to wrap long lines in the code block */}
+                    <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-4 rounded-md font-mono">
+                        <code>{yamlManifest}</code>
+                    </pre>
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   if (!crd) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
@@ -80,6 +156,41 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
   }
   
   const latestVersion = crd.spec.versions.find(v => v.storage) || crd.spec.versions[0];
+
+  const handleGenerateContext = async () => {
+    setIsLoading(true);
+    setError(null);
+    setAiResponse(null);
+
+    try {
+        const schemaString = JSON.stringify(latestVersion.schema?.openAPIV3Schema || {});
+
+        const res = await fetch(`${API_BASE_URL}/api/crd/generate-context`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                group: crd.spec.group,
+                version: latestVersion.name,
+                kind: crd.spec.names.kind,
+                schemaJSON: schemaString,
+            }),
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Failed to generate context: ${res.status} ${errorText}`);
+        }
+        
+        const textResponse = await res.text();
+        setAiResponse(textResponse);
+    } catch (e: any) {
+        setError(e.message || 'An unknown error occurred.');
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   return (
     <ScrollArea className="h-full bg-background">
@@ -97,14 +208,30 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                             <Box className="h-7 w-7 text-primary" />
                             {crd.spec.names.kind}
                         </CardTitle>
-                        <Link href={`/instances?crdName=${crd.metadata.name}`} passHref>
-                          <Button variant="outline">
-                              <LayoutList className="mr-2 h-4 w-4" />
-                              View Instances
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                             <Button onClick={handleGenerateContext} disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Thinking...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        Ask AI
+                                    </>
+                                )}
+                            </Button>
+                            <a href={`/instances?crdName=${crd.metadata.name}`}>
+                              <Button variant="outline">
+                                  <LayoutList className="mr-2 h-4 w-4" />
+                                  View Instances
+                              </Button>
+                            </a>
+                        </div>
                     </div>
-                    <CardDescription className="pt-1 md:pl-[calc(1.75rem+0.75rem)]">{crd.metadata.name}</CardDescription>
+                    {/* FIX: Added break-all to prevent long CRD names from overflowing the card */}
+                    <CardDescription className="pt-1 md:pl-[calc(1.75rem+0.75rem)] break-all">{crd.metadata.name}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 md:p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6 pb-6 border-b border-border">
@@ -143,6 +270,33 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                             </div>
                          )}
                     </div>
+                    
+                    {(isLoading || error || aiResponse) && (
+                         <div className="mb-6">
+                             <h3 className="text-lg font-semibold font-headline mb-3 flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                                AI Assistant
+                             </h3>
+                            {isLoading && (
+                                <div className="space-y-4">
+                                    <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+                                    <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+                                    <div className="h-24 bg-muted rounded w-full animate-pulse mt-6"></div>
+                                </div>
+                            )}
+                            {error && (
+                                 <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive flex items-start gap-3">
+                                    <AlertTriangle className="h-5 w-5 mt-0.5" />
+                                    <div>
+                                        <p className="font-semibold">Error</p>
+                                        <p className="mt-1">{error}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {aiResponse && <AIResponseDisplay response={aiResponse} />}
+                         </div>
+                    )}
+
 
                     <Accordion type="single" collapsible defaultValue="schema" className="w-full">
                         <AccordionItem value="schema">
@@ -155,6 +309,7 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                             <AccordionTrigger className="text-lg font-semibold font-headline">Raw Definition</AccordionTrigger>
                             <AccordionContent>
                                 <div className="bg-muted p-4 rounded-md">
+                                    {/* FIX: Ensured this pre tag also has break-all */}
                                     <pre className="text-xs whitespace-pre-wrap break-all">
                                         {JSON.stringify(crd, null, 2)}
                                     </pre>
@@ -168,3 +323,4 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
     </ScrollArea>
   );
 }
+
