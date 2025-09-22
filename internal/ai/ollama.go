@@ -1,4 +1,4 @@
-package ollama
+package ai
 
 import (
 	"bufio"
@@ -16,11 +16,18 @@ const (
 	// defaultOllamaHost is the default address for the Ollama API.
 	defaultOllamaHost = "http://localhost:11435"
 	// defaultOllamaModel is the default model to use for generation.
-	defaultOllamaModel = "tinyllama"
+	defaultOllamaModel = "llama3.1"
 	// defaultRequestTimeout is the default timeout for HTTP requests to the Ollama API.
 	defaultRequestTimeout = 10 * time.Minute
-	maxScannerCapacity    = 1 * 1024 * 1024
+	// maxScannerCapacity defines the maximum size of a single line in the streaming response.
+	maxScannerCapacity = 1 * 1024 * 1024
 )
+
+type Config struct {
+	OllamaHost     string
+	OllamaModel    string
+	RequestTimeout time.Time
+}
 
 // Client holds the configuration for the Ollama client
 type Client struct {
@@ -30,7 +37,18 @@ type Client struct {
 }
 
 // NewClient creates a new Ollama client with default settings
-func NewClient() *Client {
+func NewClient(c Config) *Client {
+	return &Client{
+		OllamaURL: c.OllamaHost,
+		Model:     c.OllamaModel,
+		HTTPClient: &http.Client{
+			Timeout: time.Until(c.RequestTimeout),
+		},
+	}
+}
+
+// NewDefaultClient creates a new Ollama client with all default settings
+func NewDefaultClient() *Client {
 	return &Client{
 		OllamaURL: defaultOllamaHost,
 		Model:     defaultOllamaModel,
@@ -57,7 +75,7 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 	payload := map[string]any{
 		"model":  c.Model,
 		"prompt": prompt,
-		"stream": true, // Using streaming
+		"stream": true,
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -86,7 +104,6 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 }
 
 func (c *Client) buildPrompt(group, version, kind, schemaJSON string) string {
-	// Enhanced prompt with stricter instructions and a clearer structure.
 	return fmt.Sprintf(`
 Analyze the provided Kubernetes CRD schema. Your task is to generate a concise explanation and a valid example YAML manifest.
 
@@ -154,8 +171,8 @@ func (c *Client) processStreamingResponse(body io.Reader) (string, error) {
 }
 
 // pruneSchema recursively removes all fields from the schema except for a whitelist.
-func pruneSchema(schemaJSON string) (map[string]interface{}, error) {
-	var schema map[string]interface{}
+func pruneSchema(schemaJSON string) (map[string]any, error) {
+	var schema map[string]any
 	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema for pruning: %w", err)
 	}
@@ -165,7 +182,7 @@ func pruneSchema(schemaJSON string) (map[string]interface{}, error) {
 }
 
 // pruneMap is the recursive helper for pruneSchema.
-func pruneMap(data map[string]interface{}) map[string]interface{} {
+func pruneMap(data map[string]any) map[string]any {
 	if data == nil {
 		return nil
 	}
@@ -178,20 +195,20 @@ func pruneMap(data map[string]interface{}) map[string]interface{} {
 		"required":    true,
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for key, val := range data {
 		if !whitelist[key] {
 			continue // Skip non-whitelisted keys
 		}
 
 		switch v := val.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			result[key] = pruneMap(v)
-		case []interface{}: // This could be 'required' array or other arrays
+		case []any: // This could be 'required' array or other arrays
 			// Check if it's an array of objects to recurse into
-			var newArr []interface{}
+			var newArr []any
 			for _, item := range v {
-				if itemMap, ok := item.(map[string]interface{}); ok {
+				if itemMap, ok := item.(map[string]any); ok {
 					newArr = append(newArr, pruneMap(itemMap))
 				} else {
 					newArr = append(newArr, item) // Keep primitive values (like in 'required' array)

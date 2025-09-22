@@ -18,7 +18,9 @@ package cmd
 
 import (
 	"os"
+	"time"
 
+	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/web"
@@ -26,7 +28,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var port string
+var (
+	port           string
+	enableAI       bool
+	ollamaHost     string
+	ollamaModel    string
+	requestTimeout int
+)
 
 // webCmd represents the web command
 var webCmd = &cobra.Command{
@@ -42,7 +50,19 @@ var webCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		server := web.NewServer(client, port, log)
+		var aiClient *ai.Client
+
+		if enableAI {
+			aiConfig := ai.Config{
+				OllamaHost:     ollamaHost,
+				OllamaModel:    ollamaModel,
+				RequestTimeout: time.Now().Add(time.Duration(requestTimeout) * time.Minute),
+			}
+			aiClient = ai.NewClient(aiConfig)
+			log.Info("AI features enabled", "ollama_host", ollamaHost, "ollama_model", ollamaModel, "request_timeout_minutes", requestTimeout)
+		}
+
+		server := web.NewServer(client, port, aiClient, log)
 		log.Info("starting web server", "port", port)
 		if err := server.Start(); err != nil {
 			log.Error("error starting web server", "err", err)
@@ -53,6 +73,10 @@ var webCmd = &cobra.Command{
 
 func init() {
 	webCmd.Flags().StringVarP(&port, "port", "p", "8080", "Port for the web server")
+	webCmd.Flags().BoolVar(&enableAI, "enable-ai", false, "Enable AI features via Ollama")
+	webCmd.Flags().StringVar(&ollamaHost, "ollama-host", "http://localhost:11434", "Ollama API host")
+	webCmd.Flags().StringVar(&ollamaModel, "ollama-model", "llama3.1", "Ollama model to use for generation")
+	webCmd.Flags().IntVar(&requestTimeout, "request-timeout", 10, "Timeout in minutes for requests to the Ollama API")
 
 	rootCmd.AddCommand(webCmd)
 }

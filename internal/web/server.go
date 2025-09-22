@@ -28,9 +28,9 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
-	"github.com/pehlicd/crd-wizard/internal/ollama"
 
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
@@ -42,10 +42,12 @@ type Server struct {
 	K8sClient *k8s.Client
 	router    *http.ServeMux
 	server    *http.Server
+	aiClient  *ai.Client
 	log       *logger.Logger
+	startTime time.Time
 }
 
-func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
+func NewServer(client *k8s.Client, port string, aiClient *ai.Client, log *logger.Logger) *Server {
 	r := http.NewServeMux()
 	s := &Server{
 		K8sClient: client,
@@ -57,7 +59,9 @@ func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 			WriteTimeout: 15 * time.Minute,
 			IdleTimeout:  15 * time.Minute,
 		},
-		log: log,
+		aiClient:  aiClient,
+		log:       log,
+		startTime: time.Now(),
 	}
 	s.registerHandlers()
 	return s
@@ -75,7 +79,10 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/cr", s.CrHandler)
 	apiRouter.HandleFunc("/events", s.EventsHandler)
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
-	apiRouter.HandleFunc("/crd/generate-context", s.GenerateCrdContextHandler)
+	if s.aiClient != nil {
+		apiRouter.HandleFunc("/crd/generate-context", s.GenerateCrdContextHandler)
+	}
+	apiRouter.HandleFunc("/status", s.Status)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
@@ -117,6 +124,19 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
+type statusResponse struct {
+	Uptime    string `json:"uptime"`
+	AIEnabled bool   `json:"aiEnabled"`
+}
+
+func (s *Server) Status(w http.ResponseWriter, _ *http.Request) {
+	resp := statusResponse{
+		Uptime:    time.Since(s.startTime).String(),
+		AIEnabled: s.aiClient != nil,
+	}
+	s.respondWithJSON(w, http.StatusOK, resp)
+}
+
 // generateContextRequest defines the expected JSON body for the AI context generation endpoint.
 type generateContextRequest struct {
 	Group      string `json:"group"`
@@ -150,11 +170,7 @@ func (s *Server) GenerateCrdContextHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Initialize the Ollama client. The host and model can be made configurable
-	// through your application's settings if needed.
-	ollamaClient := ollama.NewClient()
-
-	generatedText, err := ollamaClient.GenerateCrdContext(
+	generatedText, err := s.aiClient.GenerateCrdContext(
 		r.Context(),
 		reqPayload.Group,
 		reqPayload.Version,
