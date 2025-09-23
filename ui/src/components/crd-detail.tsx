@@ -76,8 +76,14 @@ const CodeBlock = ({ language, code }: { language: string; code: string }) => {
     const handleCopy = () => {
         const textArea = document.createElement("textarea");
         textArea.value = code;
+
+        // Position the textarea off-screen to prevent scrolling and visual artifacts
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+
         document.body.appendChild(textArea);
-        textArea.focus();
+        // Use select() without focus() to avoid page jump
         textArea.select();
         try {
             document.execCommand('copy');
@@ -90,7 +96,7 @@ const CodeBlock = ({ language, code }: { language: string; code: string }) => {
     };
 
     return (
-        <div className="my-4 rounded-md border bg-muted/20">
+        <div className="my-4 rounded-md border bg-muted/20 overflow-hidden">
             <div className="flex justify-between items-center bg-muted/50 px-4 py-2 rounded-t-md">
                 <span className="text-sm font-sans text-muted-foreground">{language || 'code'}</span>
                 <Button onClick={handleCopy} variant="ghost" size="sm" className="flex items-center gap-2">
@@ -101,8 +107,17 @@ const CodeBlock = ({ language, code }: { language: string; code: string }) => {
             <SyntaxHighlighter
                 style={vscDarkPlus}
                 language={language}
-                PreTag="div"
-                customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
+                wrapLongLines={true}
+                customStyle={{
+                    margin: 0,
+                    padding: '1rem',
+                    background: 'transparent',
+                }}
+                codeTagProps={{
+                    style: {
+                        wordBreak: 'break-all',
+                    }
+                }}
             >
                 {code}
             </SyntaxHighlighter>
@@ -112,7 +127,7 @@ const CodeBlock = ({ language, code }: { language: string; code: string }) => {
 
 const AIResponseDisplay = ({ response }: { response: string }) => {
     return (
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
             <ReactMarkdown
                 components={{
                     code({ inline, className, children, ...props }: React.HTMLAttributes<HTMLElement> & { inline?: boolean; children?: React.ReactNode }) {
