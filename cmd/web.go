@@ -58,7 +58,7 @@ var webCmd = &cobra.Command{
 				OllamaModel:    ollamaModel,
 				RequestTimeout: time.Now().Add(time.Duration(requestTimeout) * time.Minute),
 			}
-			aiClient = ai.NewClient(aiConfig)
+			aiClient = ai.NewClient(aiConfig, client, log)
 			log.Info("AI features enabled", "ollama_host", ollamaHost, "ollama_model", ollamaModel, "request_timeout_minutes", requestTimeout)
 		}
 
