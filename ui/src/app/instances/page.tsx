@@ -88,35 +88,83 @@ function InstancesView() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 bg-background">
-      <div className="flex items-center justify-between space-y-2">
-        <div className="flex items-center gap-4">
-          <Link href="/" passHref>
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">{crdName}</h2>
-            <p className="text-muted-foreground">Instances Overview</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <Link href="/" passHref>
+              <Button variant="outline" size="icon" className="hover:bg-primary/10 transition-colors">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">{crdName}</h1>
+              <p className="text-muted-foreground text-lg">Instance Management</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Instances</CardTitle>
-          <Package className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent><div className="text-2xl font-bold">{crs.length}</div></CardContent>
-      </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Instances</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">{crs.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {crs.length === 0 ? 'No instances found' : `Active resources`}
+              </p>
+            </CardContent>
+          </Card>
 
-      <div className="grid gap-6 grid-cols-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>Instances Overview</CardTitle>
-            <CardDescription>An overview of each custom resource instance. Click 'Details' to see more information.</CardDescription>
-          </CardHeader>
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Namespaces</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">
+                {new Set(crs.map(cr => cr.metadata.namespace || 'cluster-wide')).size}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Unique namespaces
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Recent Activity</CardTitle>
+              <Clock className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">
+                {crs.filter(cr => {
+                  const created = new Date(cr.metadata.creationTimestamp);
+                  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                  return created > dayAgo;
+                }).length}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Created in last 24h
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid gap-6 grid-cols-1">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                Instances Overview
+              </CardTitle>
+              <CardDescription>Manage and explore each custom resource instance. Click 'Details' for comprehensive information.</CardDescription>
+            </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px]">
               <Table>
@@ -186,7 +234,38 @@ function InstancesView() {
               </Table>
             </ScrollArea>
           </CardContent>
-        </Card>
+          </Card>
+
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Creation Timeline
+              </CardTitle>
+              <CardDescription>Instances sorted by creation time.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Age</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {crs.length > 0 ? [...crs].sort((a, b) => new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()).map(cr => (
+                      <TableRow key={cr.id}>
+                        <TableCell className="font-medium">{cr.metadata.name}</TableCell>
+                        <TableCell>{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</TableCell>
+                      </TableRow>
+                    )) : <TableRow><TableCell colSpan={2} className="h-24 text-center">No instances found.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
