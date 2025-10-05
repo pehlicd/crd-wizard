@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, FileJson, History, Share2 } from 'lucide-react';
+import { ArrowLeft, FileJson, History, Share2, Package } from 'lucide-react';
 import { ResourceGraph } from '@/components/resource-graph';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -156,41 +156,95 @@ function CrDetailView() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 bg-background">
-      <div className="flex items-center justify-between space-y-2">
-        <div className="flex items-center gap-4">
-          <Link href={`/instances?crdName=${crdName}`} passHref>
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <p className="text-sm text-muted-foreground">{cr.kind}</p>
-            <h2 className="text-3xl font-bold tracking-tight">{cr.metadata.name}</h2>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <Link href={`/instances?crdName=${crdName}`} passHref>
+              <Button variant="outline" size="icon" className="hover:bg-primary/10 transition-colors">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs font-mono">
+                  {cr.kind}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {cr.apiVersion}
+                </Badge>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">{cr.metadata.name}</h1>
+              <p className="text-muted-foreground text-sm font-mono mt-1">
+                UID: {cr.metadata.uid}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Namespace</CardTitle>
-          </CardHeader>
-          <CardContent><div className="text-lg font-bold">{cr.metadata.namespace || 'Cluster-Scoped'}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-          </CardHeader>
-          <CardContent><div className="text-lg font-bold">{getStatusBadge(cr)}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Age</CardTitle>
-          </CardHeader>
-          <CardContent><div className="text-lg font-bold">{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</div></CardContent>
-        </Card>
-      </div>
+        {/* Info Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Namespace</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-foreground">
+                {cr.metadata.namespace || 'Cluster-Wide'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {cr.metadata.namespace ? 'Namespaced resource' : 'Cluster-scoped resource'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Status</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">
+                {getStatusBadge(cr)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Current state
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Age</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-foreground">
+                {formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Created: {new Date(cr.metadata.creationTimestamp).toLocaleDateString()}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Generation</CardTitle>
+              <Package className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold text-foreground">
+                {(cr.metadata as any).generation || 1}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Resource version: {(cr.metadata as any).resourceVersion || 'N/A'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
       <Tabs defaultValue="definition" className="w-full">
         <TabsList>
@@ -262,7 +316,8 @@ function CrDetailView() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 }
