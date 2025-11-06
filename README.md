@@ -82,10 +82,17 @@ go install github.com/pehlicd/crd-wizard@latest
 
 ### Kubernetes Deployment
 
-Deploy CRD Wizard directly to your Kubernetes cluster using Kustomize:
+Deploy CRD Wizard directly to your Kubernetes cluster using Kustomize.
 
+First, clone the repository:
 ```shell
-kubectl apply -k https://github.com/pehlicd/crd-wizard/deploy/base
+git clone https://github.com/pehlicd/crd-wizard.git
+cd crd-wizard
+```
+
+Then apply the manifests:
+```shell
+kubectl apply -k deploy/base
 ```
 
 For more deployment options and customization, see the [deploy directory](deploy/README.md).

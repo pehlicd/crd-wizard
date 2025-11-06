@@ -137,9 +137,11 @@ kubectl delete -k deploy/base
 ## RBAC Permissions
 
 CRD Wizard requires cluster-wide read permissions to:
-- List and watch CustomResourceDefinitions
-- List and watch all custom resources across all API groups
-- List and watch Events
+- List and watch CustomResourceDefinitions (apiextensions.k8s.io)
+- List and watch all custom resources across all API groups (wildcard needed for dynamic discovery)
+- List and watch Events (core/v1)
+
+**Note on Wildcard Permissions**: The ClusterRole grants read access (`get`, `list`, `watch`) to all API groups and resources. This is necessary because CRD Wizard dynamically discovers and displays custom resources from any CRD in the cluster. The application does not have write permissions and only performs read operations.
 
 These permissions are granted via the ClusterRole in `clusterrole.yaml`.
 
