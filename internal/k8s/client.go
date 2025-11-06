@@ -172,11 +172,25 @@ func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 }
 
 func (c *Client) CheckHealth(ctx context.Context) error {
-	_, err := c.DiscoveryClient.ServerVersion()
-	if err != nil {
-		return fmt.Errorf("kubernetes API is not accessible: %w", err)
+	type result struct {
+		err error
 	}
-	return nil
+
+	ch := make(chan result, 1)
+	go func() {
+		_, err := c.DiscoveryClient.ServerVersion()
+		ch <- result{err: err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("health check timeout: %w", ctx.Err())
+	case res := <-ch:
+		if res.err != nil {
+			return fmt.Errorf("kubernetes API is not accessible: %w", res.err)
+		}
+		return nil
+	}
 }
 
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {

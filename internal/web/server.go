@@ -229,8 +229,7 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	err := s.K8sClient.CheckHealth(ctx)
+	err := s.K8sClient.CheckHealth(r.Context())
 
 	var status models.HealthStatus
 	if err != nil {
