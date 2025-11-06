@@ -88,3 +88,10 @@ type ClusterInfo struct {
 	ServerVersion string `json:"serverVersion"`
 	NumCRDs       int    `json:"numCRDs"`
 }
+
+// HealthStatus represents the health status of the application.
+type HealthStatus struct {
+	Status            string `json:"status"`
+	KubernetesHealthy bool   `json:"kubernetesHealthy"`
+	Message           string `json:"message,omitempty"`
+}

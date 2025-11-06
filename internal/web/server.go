@@ -76,6 +76,8 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
+	s.router.HandleFunc("/health", s.HealthHandler)
+
 	staticFS, _ := fs.Sub(staticFiles, "static")
 	uiFile := http.FS(staticFS)
 	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +226,29 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.respondWithJSON(w, http.StatusOK, graph)
+}
+
+func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	err := s.K8sClient.CheckHealth(ctx)
+
+	var status models.HealthStatus
+	if err != nil {
+		s.log.Error("health check failed", "err", err)
+		status = models.HealthStatus{
+			Status:            "unhealthy",
+			KubernetesHealthy: false,
+			Message:           err.Error(),
+		}
+		s.respondWithJSON(w, http.StatusServiceUnavailable, status)
+		return
+	}
+
+	status = models.HealthStatus{
+		Status:            "healthy",
+		KubernetesHealthy: true,
+	}
+	s.respondWithJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) respondWithJSON(w http.ResponseWriter, code int, payload any) {

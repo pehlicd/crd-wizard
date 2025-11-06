@@ -171,6 +171,14 @@ func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 	}, nil
 }
 
+func (c *Client) CheckHealth(ctx context.Context) error {
+	_, err := c.DiscoveryClient.ServerVersion()
+	if err != nil {
+		return fmt.Errorf("kubernetes API is not accessible: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {
 	crdList, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
