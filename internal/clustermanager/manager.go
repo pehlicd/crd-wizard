@@ -115,3 +115,35 @@ func (cm *ClusterManager) Count() int {
 
 	return len(cm.clusters)
 }
+
+// LoadAllContexts loads all contexts from the kubeconfig and registers them as clusters
+func (cm *ClusterManager) LoadAllContexts(kubeconfigPath string) error {
+	contexts, err := k8s.GetAllContexts(kubeconfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to get contexts from kubeconfig: %w", err)
+	}
+
+	cm.log.Info("loading contexts from kubeconfig", "count", len(contexts))
+
+	for contextName := range contexts {
+		// Try to create a client for this context
+		client, err := k8s.NewClient(kubeconfigPath, contextName, cm.log)
+		if err != nil {
+			cm.log.Warn("failed to create client for context, skipping", "context", contextName, "err", err)
+			continue
+		}
+
+		// Register the client with the context name
+		if err := cm.AddCluster(contextName, client); err != nil {
+			cm.log.Warn("failed to register cluster, skipping", "context", contextName, "err", err)
+			continue
+		}
+	}
+
+	if cm.Count() == 0 {
+		return fmt.Errorf("no clusters could be loaded from kubeconfig")
+	}
+
+	cm.log.Info("successfully loaded clusters", "count", cm.Count())
+	return nil
+}

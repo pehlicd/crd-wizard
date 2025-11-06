@@ -48,13 +48,21 @@ type Server struct {
 }
 
 func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
-	r := http.NewServeMux()
-	cm := clustermanager.NewClusterManager(log)
+	return NewServerWithClusterManager(client, nil, port, log)
+}
 
-	// Register the default cluster
-	if client != nil {
-		if err := cm.AddCluster(client.ClusterName, client); err != nil {
-			log.Error("failed to add default cluster to manager", "err", err)
+func NewServerWithClusterManager(client *k8s.Client, cm *clustermanager.ClusterManager, port string, log *logger.Logger) *Server {
+	r := http.NewServeMux()
+
+	// Use provided cluster manager or create a new one
+	if cm == nil {
+		cm = clustermanager.NewClusterManager(log)
+
+		// Register the default cluster
+		if client != nil {
+			if err := cm.AddCluster(client.ClusterName, client); err != nil {
+				log.Error("failed to add default cluster to manager", "err", err)
+			}
 		}
 	}
 

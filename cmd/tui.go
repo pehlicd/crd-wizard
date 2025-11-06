@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/pehlicd/crd-wizard/internal/clustermanager"
-	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/tui"
 
@@ -59,19 +58,16 @@ Multi-cluster support: Press 'c' in the main view to switch between clusters.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, io.Discard)
 
-		// Initialize the Kubernetes client.
-		client, err := k8s.NewClient(kubeconfig, context, log)
-		if err != nil {
-			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
+		// Initialize cluster manager
+		clusterMgr := clustermanager.NewClusterManager(log)
+
+		// Load all contexts from kubeconfig
+		if err := clusterMgr.LoadAllContexts(kubeconfig); err != nil {
+			fmt.Printf("❌ Failed to load contexts from kubeconfig: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Initialize cluster manager and register the client
-		clusterMgr := clustermanager.NewClusterManager(log)
-		if err := clusterMgr.AddCluster(client.ClusterName, client); err != nil {
-			fmt.Printf("❌ Could not register cluster: %v\n", err)
-			os.Exit(1)
-		}
+		fmt.Printf("✅ Loaded %d cluster(s) from kubeconfig\n", clusterMgr.Count())
 
 		// Start the TUI with cluster manager.
 		if err := tui.Start(clusterMgr, crd, kind); err != nil {

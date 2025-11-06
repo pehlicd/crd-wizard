@@ -153,6 +153,36 @@ func buildConfig(kubeconfigPath, contextName string) (*rest.Config, string, erro
 	return clientConfig, clusterName, nil
 }
 
+// GetAllContexts returns all available contexts from the kubeconfig
+func GetAllContexts(kubeconfigPath string) (map[string]string, error) {
+	// Expand home directory if needed
+	if strings.HasPrefix(kubeconfigPath, "~/") {
+		home := homedir.HomeDir()
+		if home == "" {
+			return nil, fmt.Errorf("cannot expand tilde path: user home directory not found")
+		}
+		kubeconfigPath = filepath.Join(home, kubeconfigPath[2:])
+	}
+
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeconfigPath != "" {
+		loadingRules.ExplicitPath = kubeconfigPath
+	}
+
+	config, err := loadingRules.Load()
+	if err != nil {
+		return nil, fmt.Errorf("error loading kubeconfig: %w", err)
+	}
+
+	// Map of context name to cluster name
+	contexts := make(map[string]string)
+	for contextName, contextObj := range config.Contexts {
+		contexts[contextName] = contextObj.Cluster
+	}
+
+	return contexts, nil
+}
+
 func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 	versionInfo, err := c.DiscoveryClient.ServerVersion()
 	if err != nil {
