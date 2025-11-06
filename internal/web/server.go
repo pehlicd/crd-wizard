@@ -76,6 +76,7 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
+	// Health endpoint is registered without logging middleware to avoid noise in logs
 	s.router.HandleFunc("/health", s.HealthHandler)
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
