@@ -171,6 +171,9 @@ func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 	}, nil
 }
 
+// CheckHealth verifies connectivity to the Kubernetes API server.
+// Note: ctx parameter is provided for future compatibility but not currently used
+// as the underlying ServerVersion() method does not accept a context parameter.
 func (c *Client) CheckHealth(ctx context.Context) error {
 	_, err := c.DiscoveryClient.ServerVersion()
 	if err != nil {
