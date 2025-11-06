@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { CustomResource } from '@/lib/crd-data';
 import { useToast } from '@/hooks/use-toast';
+import { useFetchWithCluster } from '@/hooks/use-fetch-with-cluster';
+import { useCluster } from '@/contexts/cluster-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +35,8 @@ function InstancesView() {
   const searchParams = useSearchParams();
   const crdName = searchParams.get('crdName');
   const { toast } = useToast();
+  const fetchWithCluster = useFetchWithCluster();
+  const { selectedCluster } = useCluster();
 
   const [crs, setCrs] = useState<CustomResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +47,7 @@ function InstancesView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const crsResponse = await fetch(`${API_BASE_URL}/api/crs?crdName=${crdName}`, { cache: 'no-store' });
+        const crsResponse = await fetchWithCluster(`${API_BASE_URL}/api/crs?crdName=${crdName}`, { cache: 'no-store' });
 
         if (!crsResponse.ok) {
           const errorText = await crsResponse.text();
@@ -70,7 +74,7 @@ function InstancesView() {
     };
 
     fetchData();
-  }, [crdName, toast]);
+  }, [crdName, selectedCluster, toast]);
 
 
   if (isLoading) {

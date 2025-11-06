@@ -17,6 +17,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package tui
 
 import (
+	tea "github.com/charmbracelet/bubbletea"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -40,3 +41,14 @@ type showInfoMsg struct{ models.ClusterInfo }
 
 type goBackMsg struct{}
 type errMsg struct{ err error }
+
+type showClusterSelectorMsg struct{}
+type switchClusterMsg struct{ clusterName string }
+
+func goBackCmd() tea.Msg {
+	return goBackMsg{}
+}
+
+func showClusterSelectorCmd() tea.Msg {
+	return showClusterSelectorMsg{}
+}

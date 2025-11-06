@@ -22,6 +22,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/pehlicd/crd-wizard/internal/clustermanager"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/models"
 )
@@ -32,23 +33,29 @@ const (
 	crdListView currentView = iota
 	instanceListView
 	detailView
+	clusterSelectorView
 )
 
 type mainModel struct {
-	client            *k8s.Client
-	view              currentView
-	err               error
-	width, height     int
-	crdListModel      tea.Model
-	instanceListModel tea.Model
-	detailViewModel   tea.Model
+	clusterMgr           *clustermanager.ClusterManager
+	client               *k8s.Client
+	currentClusterName   string
+	view                 currentView
+	err                  error
+	width, height        int
+	crdListModel         tea.Model
+	instanceListModel    tea.Model
+	detailViewModel      tea.Model
+	clusterSelectorModel tea.Model
 }
 
-func newMainModel(client *k8s.Client, crdName, kind string) mainModel {
+func newMainModel(clusterMgr *clustermanager.ClusterManager, client *k8s.Client, crdName, kind string) mainModel {
 	model := mainModel{
-		client:       client,
-		view:         crdListView,
-		crdListModel: newCRDListModel(client, nil),
+		clusterMgr:         clusterMgr,
+		client:             client,
+		currentClusterName: client.ClusterName,
+		view:               crdListView,
+		crdListModel:       newCRDListModel(client, nil),
 	}
 
 	// If a CRD name or Kind is provided via flags, fetch it and pre-filter crdList view
@@ -99,10 +106,19 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.detailViewModel != nil {
 			m.detailViewModel, _ = m.detailViewModel.Update(msg)
 		}
+		if m.clusterSelectorModel != nil {
+			m.clusterSelectorModel, _ = m.clusterSelectorModel.Update(msg)
+		}
 
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
+		}
+		// Show cluster selector with 'c' key (only in crdListView)
+		if msg.String() == "c" && m.view == crdListView && m.clusterMgr.Count() > 1 {
+			m.clusterSelectorModel = newClusterSelectorModel(m.clusterMgr, m.currentClusterName, m.width, m.height)
+			m.view = clusterSelectorView
+			return m, nil
 		}
 
 	case showInstancesMsg:
@@ -115,6 +131,21 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.detailViewModel.Init())
 		m.view = detailView
 
+	case showClusterSelectorMsg:
+		m.clusterSelectorModel = newClusterSelectorModel(m.clusterMgr, m.currentClusterName, m.width, m.height)
+		m.view = clusterSelectorView
+
+	case switchClusterMsg:
+		// Switch to the selected cluster
+		if client, err := m.clusterMgr.GetClient(msg.clusterName); err == nil {
+			m.client = client
+			m.currentClusterName = msg.clusterName
+			// Refresh the CRD list with the new cluster
+			m.crdListModel = newCRDListModel(m.client, nil)
+			cmds = append(cmds, m.crdListModel.Init())
+		}
+		m.view = crdListView
+
 	case goBackMsg:
 		// Improved back navigation logic
 		switch m.view {
@@ -123,8 +154,10 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case instanceListView:
 			m.view = crdListView
 			cmds = append(cmds, m.instanceListModel.Init())
+		case clusterSelectorView:
+			m.view = crdListView
 		default:
-			m.view = instanceListView
+			m.view = crdListView
 		}
 
 	case errMsg:
@@ -139,6 +172,8 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.instanceListModel, cmd = m.instanceListModel.Update(msg)
 	case detailView:
 		m.detailViewModel, cmd = m.detailViewModel.Update(msg)
+	case clusterSelectorView:
+		m.clusterSelectorModel, cmd = m.clusterSelectorModel.Update(msg)
 	}
 	cmds = append(cmds, cmd)
 
@@ -153,6 +188,8 @@ func (m mainModel) View() string {
 		return m.instanceListModel.View()
 	case detailView:
 		return m.detailViewModel.View()
+	case clusterSelectorView:
+		return m.clusterSelectorModel.View()
 	default:
 		return "Unknown view"
 	}

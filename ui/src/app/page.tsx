@@ -6,7 +6,10 @@ import { API_BASE_URL } from '@/lib/constants';
 import CrdList from '@/components/crd-list';
 import CrdDetail from '@/components/crd-detail';
 import { useToast } from '@/hooks/use-toast';
+import { useFetchWithCluster } from '@/hooks/use-fetch-with-cluster';
+import { useCluster } from '@/contexts/cluster-context';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ClusterSelector } from '@/components/cluster-selector';
 import { cn } from '@/lib/utils';
 import { Logo } from "@/components/ui/logo";
 import { Button } from '@/components/ui/button';
@@ -23,11 +26,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
+  const fetchWithCluster = useFetchWithCluster();
+  const { selectedCluster } = useCluster();
 
   async function fetchCrds() {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crds`, { cache: 'no-store' });
+      const response = await fetchWithCluster(`${API_BASE_URL}/api/crds`, { cache: 'no-store' });
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch CRDs from server: ${response.status} ${errorText}`);
@@ -52,7 +57,7 @@ export default function Home() {
 
   async function fetchClusterInfo() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cluster-info`, { cache: 'no-store' });
+      const response = await fetchWithCluster(`${API_BASE_URL}/api/cluster-info`, { cache: 'no-store' });
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch cluster info from server: ${response.status} ${errorText}`);
@@ -73,7 +78,7 @@ export default function Home() {
   useEffect(() => {
     fetchCrds();
     fetchClusterInfo();
-  }, [toast]);
+  }, [selectedCluster]);
 
   const handleCrdSelect = (crd: CRD) => {
     setSelectedCrd(crd);
@@ -153,6 +158,9 @@ export default function Home() {
             <ThemeToggle />
           </div>
         </header>
+        <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-card/30">
+          <ClusterSelector />
+        </div>
         <div className="flex-1 min-h-0">
           <CrdList
             crds={filteredCrds}
