@@ -266,14 +266,14 @@ func (m crdListModel) View() string {
 	titlestyle := TitleStyle.PaddingBottom(1)
 
 	if m.filtering {
-		help = "[Enter/Esc] Confirm/Cancel | [↑/↓] Navigate | [r] Refresh | [i] Info | [q] Quit"
+		help = "[Enter/Esc] Confirm/Cancel | [↑/↓] Navigate | [r] Refresh | [i] Info | [c] Clusters | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("️🧙 CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
-		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [i] Info | [q] Quit"
+		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [i] Info | [c] Clusters | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),

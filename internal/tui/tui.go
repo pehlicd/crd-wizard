@@ -19,13 +19,20 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/pehlicd/crd-wizard/internal/clustermanager"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
 
 // Start initializes and runs the Bubble Tea TUI.
-func Start(client *k8s.Client, crdName string, kind string) error {
-	// Pass the flag values to the main model constructor.
-	mainModel := newMainModel(client, crdName, kind)
+func Start(clusterMgr *clustermanager.ClusterManager, crdName string, kind string) error {
+	// Get the default client to start with
+	client := clusterMgr.GetDefaultClient()
+	if client == nil {
+		return tea.Quit()
+	}
+
+	// Pass the cluster manager and current client to the main model constructor.
+	mainModel := newMainModel(clusterMgr, client, crdName, kind)
 	p := tea.NewProgram(mainModel, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, err := p.Run()
 	return err
