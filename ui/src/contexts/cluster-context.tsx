@@ -24,7 +24,8 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/clusters`);
         if (!response.ok) {
-          throw new Error('Failed to fetch clusters');
+          const statusText = await response.text();
+          throw new Error(`Failed to fetch clusters: ${response.status} ${statusText}`);
         }
         const data = await response.json();
         setClusters(data.clusters || []);

@@ -1,9 +1,10 @@
 import { useCluster } from '@/contexts/cluster-context';
+import { useCallback } from 'react';
 
 export function useFetchWithCluster() {
   const { selectedCluster } = useCluster();
 
-  const fetchWithCluster = async (url: string, options?: RequestInit) => {
+  const fetchWithCluster = useCallback(async (url: string, options?: RequestInit) => {
     const headers = new Headers(options?.headers);
     
     if (selectedCluster) {
@@ -14,7 +15,7 @@ export function useFetchWithCluster() {
       ...options,
       headers,
     });
-  };
+  }, [selectedCluster]);
 
   return fetchWithCluster;
 }
