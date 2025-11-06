@@ -93,6 +93,39 @@ OR if you don't want to leave your terminal run:
 crd-wizard tui
 ```
 
+### Multi-Cluster Support
+
+CR(D) Wizard supports managing multiple Kubernetes clusters simultaneously via the web interface. The cluster manager stores cluster clients in memory and allows you to specify which cluster to query using HTTP headers.
+
+#### Using the Multi-Cluster API
+
+When making API requests, you can specify which cluster to use by including the `X-Cluster-Name` header:
+
+```bash
+# Query CRDs from a specific cluster
+curl -H "X-Cluster-Name: my-cluster" http://localhost:8080/api/crds
+
+# Get cluster information
+curl -H "X-Cluster-Name: production-cluster" http://localhost:8080/api/cluster-info
+
+# List all registered clusters
+curl http://localhost:8080/api/clusters
+```
+
+If no `X-Cluster-Name` header is provided, the API will use the default cluster (the one specified via `--context` flag or kubeconfig).
+
+#### API Endpoints
+
+- `GET /api/clusters` - List all registered clusters
+- `GET /api/cluster-info` - Get information about a specific cluster
+- `GET /api/crds` - List CRDs in a cluster
+- `GET /api/crs?crdName=<name>` - List Custom Resources for a CRD
+- `GET /api/cr?crdName=<name>&namespace=<ns>&name=<name>` - Get a specific Custom Resource
+- `GET /api/events?crdName=<name>` or `?resourceUid=<uid>` - Get events
+- `GET /api/resource-graph?uid=<uid>` - Get resource relationship graph
+
+All endpoints support the `X-Cluster-Name` header for multi-cluster operations.
+
 ### `k9s` [plugin](https://k9scli.io/topics/plugins/)
 
 ```yaml
