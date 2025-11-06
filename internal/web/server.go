@@ -20,6 +20,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"sync"
@@ -28,6 +29,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/pehlicd/crd-wizard/internal/clustermanager"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
 
@@ -38,17 +40,28 @@ import (
 var staticFiles embed.FS
 
 type Server struct {
-	K8sClient *k8s.Client
-	router    *http.ServeMux
-	server    *http.Server
-	log       *logger.Logger
+	K8sClient      *k8s.Client
+	ClusterManager *clustermanager.ClusterManager
+	router         *http.ServeMux
+	server         *http.Server
+	log            *logger.Logger
 }
 
 func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 	r := http.NewServeMux()
+	cm := clustermanager.NewClusterManager(log)
+	
+	// Register the default cluster
+	if client != nil {
+		if err := cm.AddCluster(client.ClusterName, client); err != nil {
+			log.Error("failed to add default cluster to manager", "err", err)
+		}
+	}
+	
 	s := &Server{
-		K8sClient: client,
-		router:    r,
+		K8sClient:      client,
+		ClusterManager: cm,
+		router:         r,
 		server: &http.Server{
 			Addr:         ":" + port,
 			Handler:      r,
@@ -68,6 +81,7 @@ func (s *Server) Start() error {
 
 func (s *Server) registerHandlers() {
 	apiRouter := s.router
+	apiRouter.HandleFunc("/clusters", s.ClustersHandler)
 	apiRouter.HandleFunc("/cluster-info", s.ClusterInfoHandler)
 	apiRouter.HandleFunc("/crds", s.CrdsHandler)
 	apiRouter.HandleFunc("/crs", s.CrsHandler)
@@ -115,8 +129,41 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
 }
 
-func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
-	clusterInfo, err := s.K8sClient.GetClusterInfo()
+// getClientFromRequest extracts the cluster name from the X-Cluster-Name header
+// and returns the appropriate client. Falls back to the default client if no header is present.
+func (s *Server) getClientFromRequest(r *http.Request) (*k8s.Client, error) {
+	clusterName := r.Header.Get("X-Cluster-Name")
+	
+	if clusterName == "" {
+		// Use default client if no cluster header is specified
+		client := s.ClusterManager.GetDefaultClient()
+		if client == nil {
+			return nil, fmt.Errorf("no clusters available")
+		}
+		return client, nil
+	}
+	
+	return s.ClusterManager.GetClient(clusterName)
+}
+
+// ClustersHandler returns a list of all registered clusters
+func (s *Server) ClustersHandler(w http.ResponseWriter, _ *http.Request) {
+	clusters := s.ClusterManager.ListClusters()
+	s.respondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"clusters": clusters,
+		"count":    len(clusters),
+	})
+}
+
+func (s *Server) ClusterInfoHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
+	clusterInfo, err := client.GetClusterInfo()
 	if err != nil {
 		s.log.Error("error getting cluster info", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -126,10 +173,17 @@ func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
 	s.respondWithJSON(w, http.StatusOK, clusterInfo)
 }
 
-func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) CrdsHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
 	// Note: This re-uses the k8s.GetCRDs which returns the TUI model.
 	// For the API, we want the full spec, so we fetch the raw list and convert.
-	crdList, err := s.K8sClient.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
+	crdList, err := client.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		s.log.Error("error listing CRDs", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -143,7 +197,7 @@ func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
 		go func(i int, crd apiextensionsv1.CustomResourceDefinition) {
 			defer wg.Done()
 			// This is a bit inefficient as it recounts, but for correctness with the new model.
-			instanceCount := s.K8sClient.CountCRDInstances(context.Background(), crd)
+			instanceCount := client.CountCRDInstances(context.Background(), crd)
 			apiCrds[i] = models.ToAPICRD(crd, instanceCount)
 		}(i, crd)
 	}
@@ -153,6 +207,13 @@ func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
 	crdName := r.URL.Query().Get("crdName")
 	if crdName == "" {
 		s.log.Error("crd name is empty")
@@ -160,7 +221,7 @@ func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	crs, err := s.K8sClient.GetCRsForCRD(context.Background(), crdName)
+	crs, err := client.GetCRsForCRD(context.Background(), crdName)
 	if err != nil {
 		s.log.Error("error getting crs from wizard api", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -171,6 +232,13 @@ func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CrHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
 	crdName := r.URL.Query().Get("crdName")
 	namespace := r.URL.Query().Get("namespace")
 	name := r.URL.Query().Get("name")
@@ -181,7 +249,7 @@ func (s *Server) CrHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cr, err := s.K8sClient.GetSingleCR(context.Background(), crdName, namespace, name)
+	cr, err := client.GetSingleCR(context.Background(), crdName, namespace, name)
 	if err != nil {
 		s.log.Error("error getting cr from wizard api", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -191,6 +259,13 @@ func (s *Server) CrHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) EventsHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
 	crdName := r.URL.Query().Get("crdName")
 	resourceUID := r.URL.Query().Get("resourceUid")
 
@@ -200,7 +275,7 @@ func (s *Server) EventsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.K8sClient.GetEvents(context.Background(), crdName, resourceUID)
+	events, err := client.GetEvents(context.Background(), crdName, resourceUID)
 	if err != nil {
 		s.log.Error("error getting events from wizard api", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -210,6 +285,13 @@ func (s *Server) EventsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := s.getClientFromRequest(r)
+	if err != nil {
+		s.log.Error("error getting client", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
 	uid := r.URL.Query().Get("uid")
 	if uid == "" {
 		s.log.Error("uid is empty")
@@ -217,7 +299,7 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	graph, err := s.K8sClient.GetResourceGraph(context.Background(), uid)
+	graph, err := client.GetResourceGraph(context.Background(), uid)
 	if err != nil {
 		s.log.Error("error getting resource graph from wizard api", "uid", uid, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
