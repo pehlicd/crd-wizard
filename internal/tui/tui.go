@@ -17,10 +17,11 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package tui
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/pehlicd/crd-wizard/internal/clustermanager"
-	"github.com/pehlicd/crd-wizard/internal/k8s"
 )
 
 // Start initializes and runs the Bubble Tea TUI.
@@ -28,7 +29,7 @@ func Start(clusterMgr *clustermanager.ClusterManager, crdName string, kind strin
 	// Get the default client to start with
 	client := clusterMgr.GetDefaultClient()
 	if client == nil {
-		return tea.Quit()
+		return fmt.Errorf("no clusters available")
 	}
 
 	// Pass the cluster manager and current client to the main model constructor.
