@@ -26,6 +26,8 @@
 !index.yaml
 !*.tgz
 
+!deploy/**
+
 !.github/*
 !.github/workflows/*
 !.github/ISSUE_TEMPLATE/*

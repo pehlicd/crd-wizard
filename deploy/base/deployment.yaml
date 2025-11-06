@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crd-wizard
+  namespace: crd-wizard
+  labels:
+    app: crd-wizard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crd-wizard
+  template:
+    metadata:
+      labels:
+        app: crd-wizard
+    spec:
+      serviceAccountName: crd-wizard
+      containers:
+        - name: crd-wizard
+          image: ghcr.io/pehlicd/crd-wizard:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
