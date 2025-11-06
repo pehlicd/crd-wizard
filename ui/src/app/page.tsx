@@ -89,51 +89,84 @@ export default function Home() {
   );
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <div className={cn(
-        "w-full md:w-1/3 border-r border-border flex-col h-screen",
-        "md:flex",
+        "w-full md:w-1/3 border-r border-border/50 flex flex-col h-full bg-card/30 backdrop-blur-sm",
+        "md:flex shadow-md overflow-hidden",
         mobileView === 'list' ? 'flex' : 'hidden'
       )}>
-        <header className="p-2 border-b border-border flex items-center gap-2 flex-shrink-0">
-          <Logo className="w-10 h-10 text-primary" />
-          <h1 className="text-xl font-bold font-headline text-primary">CR(D) Wizard</h1>
-          <div className="ml-auto flex items-center gap-2">
+        <header className="flex-shrink-0 p-4 border-b border-border/50 flex items-center gap-3 bg-card/50 backdrop-blur-md">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Logo className="w-8 h-8 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold font-headline text-foreground">CRD Wizard</h1>
+            <p className="text-xs text-muted-foreground">Kubernetes Resource Explorer</p>
+          </div>
+          <div className="flex items-center gap-1">
             <Popover>
-              <PopoverTrigger><Button variant="outline" size="icon"><IoMdInformationCircleOutline /></Button></PopoverTrigger>
-              <PopoverContent align="center" className="w-64">
-                <div className="p-2 text-center justify-center">
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-colors">
+                  <IoMdInformationCircleOutline className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="center" className="w-72 p-4 animate-fade-in">
+                <div className="space-y-3">
                   {clusterInfo ? (
-                    <p className="text-sm text-muted-foreground">
-                      <SiKubernetes className="inline w-5 h-5 mb-1 mr-1 text-primary" />
-                      Connected to <strong>{clusterInfo.clusterName}</strong><br />
-                      Kubernetes version: <strong>{clusterInfo.serverVersion}</strong><br />
-                      Number of CRDs: <Badge variant="secondary" className="mt-1">{clusterInfo.numCRDs}</Badge>
-                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <SiKubernetes className="w-5 h-5 text-primary" />
+                        Cluster Information
+                      </div>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p><strong>Cluster:</strong> {clusterInfo.clusterName}</p>
+                        <p><strong>Version:</strong> {clusterInfo.serverVersion}</p>
+                        <div className="flex items-center gap-2">
+                          <strong>CRDs:</strong>
+                          <Badge variant="secondary" className="text-xs">
+                            {clusterInfo.numCRDs} resources
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Could not fetch cluster info.</p>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Unable to fetch cluster information</p>
+                    </div>
                   )}
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" size="icon" onClick={fetchCrds} disabled={isLoading} title="Refresh">
-              <IoMdRefresh className={cn("h-5 w-5 transition-transform", isLoading ? "animate-spin" : "")} />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={fetchCrds} 
+              disabled={isLoading} 
+              className="hover:bg-primary/10 transition-colors"
+              title="Refresh"
+            >
+              <IoMdRefresh className={cn(
+                "h-4 w-4 transition-all duration-300", 
+                isLoading ? "animate-spin" : "hover:rotate-90"
+              )} />
             </Button>
             <ThemeToggle />
           </div>
         </header>
-        <CrdList
-          crds={filteredCrds}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedCrd={selectedCrd}
-          onCrdSelect={handleCrdSelect}
-          isLoading={isLoading}
-        />
+        <div className="flex-1 min-h-0">
+          <CrdList
+            crds={filteredCrds}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedCrd={selectedCrd}
+            onCrdSelect={handleCrdSelect}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
       <main className={cn(
-        "w-full md:w-2/3 h-screen overflow-y-auto",
-        "md:block",
+        "w-full md:w-2/3 h-full overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20",
+        "md:block relative",
         mobileView === 'detail' ? 'block' : 'hidden'
       )}>
         <CrdDetail crd={selectedCrd} onBack={handleBack} />

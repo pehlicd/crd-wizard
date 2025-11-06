@@ -73,22 +73,49 @@ export const AnimatedNode = memo(({ data }: NodeProps<AnimatedNodeData>) => {
             <TooltipTrigger asChild>
                 <div
                     className={cn(
-                        "flex flex-col px-4 py-3 rounded-lg border-2 shadow-sm min-w-[280px] max-w-[300px] relative overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-[1.03]",
+                        "flex flex-col px-4 py-3 rounded-xl border-2 shadow-lg min-w-[280px] max-w-[300px] relative overflow-hidden cursor-pointer transition-all duration-300",
+                        "hover:scale-105 hover:shadow-2xl hover:z-10",
+                        "group backdrop-blur-sm bg-opacity-90",
                         colorClass,
-                        data.ledAnimation && "led-node",
+                        data.ledAnimation && "led-node animate-pulse-soft",
                     )}
                 >
-                    {data.ledAnimation && <div className="absolute inset-0 led-light-overlay rounded-lg pointer-events-none" />}
+                    {data.ledAnimation && (
+                      <div className="absolute inset-0 led-light-overlay rounded-xl pointer-events-none opacity-60" />
+                    )}
 
-                    <span className="text-xs font-medium uppercase tracking-wide opacity-75 relative z-10">{nodeType}</span>
-                    <span className="text-sm font-semibold truncate relative z-10">{nodeName}</span>
+                    {/* Decorative gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/5 rounded-xl pointer-events-none" />
+                    
+                    {/* Hover glow effect */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-gray-400 border-2 border-white" />
-                    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-gray-400 border-2 border-white" />
+                    <div className="relative z-10 space-y-1">
+                        <span className="text-xs font-bold uppercase tracking-wider opacity-80 text-current">
+                            {nodeType}
+                        </span>
+                        <span className="text-sm font-semibold truncate text-current block leading-tight">
+                            {nodeName}
+                        </span>
+                    </div>
+
+                    <Handle 
+                        type="target" 
+                        position={Position.Top} 
+                        className="w-3 h-3 bg-primary/80 border-2 border-background shadow-sm transition-all duration-200 hover:scale-125" 
+                    />
+                    <Handle 
+                        type="source" 
+                        position={Position.Bottom} 
+                        className="w-3 h-3 bg-primary/80 border-2 border-background shadow-sm transition-all duration-200 hover:scale-125" 
+                    />
                 </div>
             </TooltipTrigger>
-            <TooltipContent>
-                <p>{data.label}</p>
+            <TooltipContent className="bg-card/95 backdrop-blur-sm border-border/50">
+                <div className="space-y-1">
+                    <p className="font-medium">{data.label}</p>
+                    <p className="text-xs text-muted-foreground">Click to copy name</p>
+                </div>
             </TooltipContent>
         </Tooltip>
     )
