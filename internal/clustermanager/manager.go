@@ -26,9 +26,10 @@ import (
 
 // ClusterManager manages multiple Kubernetes cluster clients
 type ClusterManager struct {
-	clusters map[string]*k8s.Client
-	mu       sync.RWMutex
-	log      *logger.Logger
+	clusters       map[string]*k8s.Client
+	defaultCluster string
+	mu             sync.RWMutex
+	log            *logger.Logger
 }
 
 // NewClusterManager creates a new cluster manager
@@ -49,6 +50,12 @@ func (cm *ClusterManager) AddCluster(name string, client *k8s.Client) error {
 	}
 
 	cm.clusters[name] = client
+
+	// Set as default if it's the first cluster
+	if cm.defaultCluster == "" {
+		cm.defaultCluster = name
+	}
+
 	cm.log.Info("cluster registered", "name", name)
 	return nil
 }
@@ -71,8 +78,10 @@ func (cm *ClusterManager) GetDefaultClient() *k8s.Client {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
-	for _, client := range cm.clusters {
-		return client
+	if cm.defaultCluster != "" {
+		if client, exists := cm.clusters[cm.defaultCluster]; exists {
+			return client
+		}
 	}
 
 	return nil

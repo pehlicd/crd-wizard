@@ -138,7 +138,7 @@ func (s *Server) getClientFromRequest(r *http.Request) (*k8s.Client, error) {
 		// Use default client if no cluster header is specified
 		client := s.ClusterManager.GetDefaultClient()
 		if client == nil {
-			return nil, fmt.Errorf("no clusters available")
+			return nil, fmt.Errorf("no Kubernetes clusters configured - please configure at least one cluster")
 		}
 		return client, nil
 	}
