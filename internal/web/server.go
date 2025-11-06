@@ -50,14 +50,14 @@ type Server struct {
 func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 	r := http.NewServeMux()
 	cm := clustermanager.NewClusterManager(log)
-	
+
 	// Register the default cluster
 	if client != nil {
 		if err := cm.AddCluster(client.ClusterName, client); err != nil {
 			log.Error("failed to add default cluster to manager", "err", err)
 		}
 	}
-	
+
 	s := &Server{
 		K8sClient:      client,
 		ClusterManager: cm,
@@ -133,7 +133,7 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 // and returns the appropriate client. Falls back to the default client if no header is present.
 func (s *Server) getClientFromRequest(r *http.Request) (*k8s.Client, error) {
 	clusterName := r.Header.Get("X-Cluster-Name")
-	
+
 	if clusterName == "" {
 		// Use default client if no cluster header is specified
 		client := s.ClusterManager.GetDefaultClient()
@@ -142,7 +142,7 @@ func (s *Server) getClientFromRequest(r *http.Request) (*k8s.Client, error) {
 		}
 		return client, nil
 	}
-	
+
 	return s.ClusterManager.GetClient(clusterName)
 }
 
@@ -162,7 +162,7 @@ func (s *Server) ClusterInfoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	clusterInfo, err := client.GetClusterInfo()
 	if err != nil {
 		s.log.Error("error getting cluster info", "err", err)
@@ -180,7 +180,7 @@ func (s *Server) CrdsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// Note: This re-uses the k8s.GetCRDs which returns the TUI model.
 	// For the API, we want the full spec, so we fetch the raw list and convert.
 	crdList, err := client.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
@@ -213,7 +213,7 @@ func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	crdName := r.URL.Query().Get("crdName")
 	if crdName == "" {
 		s.log.Error("crd name is empty")
@@ -238,7 +238,7 @@ func (s *Server) CrHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	crdName := r.URL.Query().Get("crdName")
 	namespace := r.URL.Query().Get("namespace")
 	name := r.URL.Query().Get("name")
@@ -265,7 +265,7 @@ func (s *Server) EventsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	crdName := r.URL.Query().Get("crdName")
 	resourceUID := r.URL.Query().Get("resourceUid")
 
@@ -291,7 +291,7 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	uid := r.URL.Query().Get("uid")
 	if uid == "" {
 		s.log.Error("uid is empty")
