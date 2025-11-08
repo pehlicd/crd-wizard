@@ -159,66 +159,131 @@ func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 		return models.ClusterInfo{}, fmt.Errorf("failed to get server version: %w", err)
 	}
 
-	crdList, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
+	// Count all API resources using Discovery API
+	apiResourceLists, err := c.DiscoveryClient.ServerPreferredResources()
 	if err != nil {
-		return models.ClusterInfo{}, fmt.Errorf("failed to fetch CRDs: %w", err)
+		c.log.Warn("could not discover all server resources", "err", err)
+	}
+
+	resourceCount := 0
+	if apiResourceLists != nil {
+		for _, list := range apiResourceLists {
+			for _, resource := range list.APIResources {
+				// Skip subresources
+				if !strings.Contains(resource.Name, "/") {
+					resourceCount++
+				}
+			}
+		}
 	}
 
 	return models.ClusterInfo{
 		ClusterName:   c.ClusterName,
 		ServerVersion: versionInfo.GitVersion,
-		NumCRDs:       len(crdList.Items),
+		NumCRDs:       resourceCount, // Kept for backward compatibility
+		NumResources:  resourceCount,
 	}, nil
 }
 
 func (c *Client) GetCRDs(ctx context.Context) ([]models.CRD, error) {
-	crdList, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	// Use Discovery API to get all API resources in the cluster
+	apiResourceLists, err := c.DiscoveryClient.ServerPreferredResources()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch CRDs: %w", err)
+		// ServerPreferredResources can return partial results even on error
+		// This is often caused by aggregated API servers being unavailable
+		c.log.Warn("could not discover all server resources, using partial results", "err", err)
 	}
-	uiCrds := make([]models.CRD, len(crdList.Items))
+
+	if apiResourceLists == nil {
+		return nil, fmt.Errorf("failed to discover any API resources")
+	}
+
+	// Collect all resources that can be listed
+	var resources []struct {
+		gv       schema.GroupVersion
+		resource metav1.APIResource
+	}
+
+	for _, list := range apiResourceLists {
+		gv, err := schema.ParseGroupVersion(list.GroupVersion)
+		if err != nil {
+			c.log.Warn("could not parse group version", "groupVersion", list.GroupVersion, "err", err)
+			continue
+		}
+
+		for _, resource := range list.APIResources {
+			// Skip subresources (e.g., pods/log, deployments/status)
+			if strings.Contains(resource.Name, "/") {
+				continue
+			}
+
+			// Skip resources that can't be listed
+			if !contains(resource.Verbs, "list") {
+				continue
+			}
+
+			// Skip componentstatuses (deprecated and not useful)
+			if gv.Group == "" && resource.Name == "componentstatuses" {
+				continue
+			}
+
+			resources = append(resources, struct {
+				gv       schema.GroupVersion
+				resource metav1.APIResource
+			}{gv: gv, resource: resource})
+		}
+	}
+
+	// Create CRD models with instance counts
+	uiCrds := make([]models.CRD, len(resources))
 	var g errgroup.Group
-	for i, crd := range crdList.Items {
-		i, crd := i, crd
+	g.SetLimit(20) // Limit concurrent goroutines
+
+	for i, res := range resources {
+		i, res := i, res
 		g.Go(func() error {
-			instanceCount := c.CountCRDInstances(ctx, crd)
-			uiCrds[i] = models.FromK8sCRD(crd, instanceCount)
+			gvr := schema.GroupVersionResource{
+				Group:    res.gv.Group,
+				Version:  res.gv.Version,
+				Resource: res.resource.Name,
+			}
+			instanceCount := c.countResourceInstances(ctx, gvr)
+			uiCrds[i] = models.FromAPIResource(res.gv, res.resource, instanceCount)
 			return nil
 		})
 	}
+
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+
 	return uiCrds, nil
 }
 
 func (c *Client) GetCRsForCRD(ctx context.Context, crdName string) ([]unstructured.Unstructured, error) {
-	crd, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
+	// crdName is now the resource name (plural), e.g., "pods", "deployments", "certificates"
+	// We need to find the GVR for this resource using Discovery API
+	gvr, err := c.findGVRForResource(ctx, crdName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CRD %s: %w", crdName, err)
+		return nil, fmt.Errorf("failed to find resource %s: %w", crdName, err)
 	}
-	gvr, _ := getGVRFromCRD(*crd)
-	if gvr.Resource == "" {
-		return nil, fmt.Errorf("could not determine GVR for CRD %s", crdName)
-	}
+
 	list, err := c.DynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list instances for CRD %s: %w", crdName, err)
+		return nil, fmt.Errorf("failed to list instances for resource %s: %w", crdName, err)
 	}
 	return list.Items, nil
 }
 
 func (c *Client) GetSingleCR(ctx context.Context, crdName, namespace, name string) (*unstructured.Unstructured, error) {
-	crd, err := c.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
+	// crdName is now the resource name (plural)
+	gvr, namespaced, err := c.findGVRAndScopeForResource(ctx, crdName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CRD %s: %w", crdName, err)
+		return nil, fmt.Errorf("failed to find resource %s: %w", crdName, err)
 	}
-	gvr, _ := getGVRFromCRD(*crd)
-	if gvr.Resource == "" {
-		return nil, fmt.Errorf("could not determine GVR for CRD %s", crdName)
-	}
+
 	var resource dynamic.ResourceInterface
-	if crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
+	if namespaced {
 		resource = c.DynamicClient.Resource(gvr).Namespace(namespace)
 	} else {
 		resource = c.DynamicClient.Resource(gvr)
@@ -298,11 +363,80 @@ func (c *Client) CountCRDInstances(ctx context.Context, crd apiextensionsv1.Cust
 	if gvr.Resource == "" {
 		return 0
 	}
+	return c.countResourceInstances(ctx, gvr)
+}
+
+func (c *Client) countResourceInstances(ctx context.Context, gvr schema.GroupVersionResource) int {
 	list, err := c.DynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{TimeoutSeconds: &[]int64{5}[0]})
 	if err != nil {
 		return 0
 	}
 	return len(list.Items)
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// findGVRForResource finds the GroupVersionResource for a given resource name using Discovery API.
+// It returns the preferred version of the resource.
+func (c *Client) findGVRForResource(ctx context.Context, resourceName string) (schema.GroupVersionResource, error) {
+	gvr, _, err := c.findGVRAndScopeForResource(ctx, resourceName)
+	return gvr, err
+}
+
+// findGVRAndScopeForResource finds the GroupVersionResource and scope for a given resource name.
+func (c *Client) findGVRAndScopeForResource(ctx context.Context, resourceName string) (schema.GroupVersionResource, bool, error) {
+	apiResourceLists, err := c.DiscoveryClient.ServerPreferredResources()
+	if err != nil {
+		c.log.Warn("could not discover all server resources", "err", err)
+	}
+
+	if apiResourceLists == nil {
+		return schema.GroupVersionResource{}, false, fmt.Errorf("no API resources discovered")
+	}
+
+	// Search for the resource in all API groups
+	// Prefer the most recent version if multiple exist
+	var foundGVR schema.GroupVersionResource
+	var foundNamespaced bool
+	var found bool
+
+	for _, list := range apiResourceLists {
+		gv, err := schema.ParseGroupVersion(list.GroupVersion)
+		if err != nil {
+			continue
+		}
+
+		for _, resource := range list.APIResources {
+			if resource.Name == resourceName {
+				foundGVR = schema.GroupVersionResource{
+					Group:    gv.Group,
+					Version:  gv.Version,
+					Resource: resource.Name,
+				}
+				foundNamespaced = resource.Namespaced
+				found = true
+				// We found a match; use the first one we encounter
+				// (ServerPreferredResources returns preferred versions first)
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+
+	if !found {
+		return schema.GroupVersionResource{}, false, fmt.Errorf("resource %s not found in cluster", resourceName)
+	}
+
+	return foundGVR, foundNamespaced, nil
 }
 
 func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVersionResource, string) {
