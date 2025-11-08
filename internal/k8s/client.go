@@ -166,13 +166,11 @@ func (c *Client) GetClusterInfo() (models.ClusterInfo, error) {
 	}
 
 	resourceCount := 0
-	if apiResourceLists != nil {
-		for _, list := range apiResourceLists {
-			for _, resource := range list.APIResources {
-				// Skip subresources
-				if !strings.Contains(resource.Name, "/") {
-					resourceCount++
-				}
+	for _, list := range apiResourceLists {
+		for _, resource := range list.APIResources {
+			// Skip subresources
+			if !strings.Contains(resource.Name, "/") {
+				resourceCount++
 			}
 		}
 	}
