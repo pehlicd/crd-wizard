@@ -22,16 +22,10 @@ import (
 	"encoding/json"
 	"io/fs"
 	"net/http"
-	"sync"
 	"time"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pehlicd/crd-wizard/internal/logger"
-	"github.com/pehlicd/crd-wizard/internal/models"
-
 	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-wizard/internal/logger"
 )
 
 //go:embed static/*
@@ -127,29 +121,15 @@ func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) CrdsHandler(w http.ResponseWriter, _ *http.Request) {
-	// Note: This re-uses the k8s.GetCRDs which returns the TUI model.
-	// For the API, we want the full spec, so we fetch the raw list and convert.
-	crdList, err := s.K8sClient.ExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().List(context.Background(), metav1.ListOptions{})
+	// Use Discovery API to list all resources (works for all users, including unprivileged)
+	crds, err := s.K8sClient.GetCRDs(context.Background())
 	if err != nil {
-		s.log.Error("error listing CRDs", "err", err)
+		s.log.Error("error listing resources", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	apiCrds := make([]models.APICRD, len(crdList.Items))
-	var wg sync.WaitGroup
-	for i, crd := range crdList.Items {
-		wg.Add(1)
-		go func(i int, crd apiextensionsv1.CustomResourceDefinition) {
-			defer wg.Done()
-			// This is a bit inefficient as it recounts, but for correctness with the new model.
-			instanceCount := s.K8sClient.CountCRDInstances(context.Background(), crd)
-			apiCrds[i] = models.ToAPICRD(crd, instanceCount)
-		}(i, crd)
-	}
-	wg.Wait()
-
-	s.respondWithJSON(w, http.StatusOK, apiCrds)
+	s.respondWithJSON(w, http.StatusOK, crds)
 }
 
 func (s *Server) CrsHandler(w http.ResponseWriter, r *http.Request) {

@@ -19,6 +19,7 @@ package models
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // APICRD is used for the web API, to include the full spec.
@@ -31,23 +32,80 @@ type APICRD struct {
 }
 
 // CRD model is used for the TUI, which only needs a subset of fields.
+// Despite the name, this can represent any Kubernetes resource (both CRD-based and built-in).
 type CRD struct {
 	APIVersion    string `json:"apiVersion"`
 	Kind          string `json:"kind"`
-	Name          string `json:"name"`
+	Name          string `json:"name"` // For CRDs: the CRD name. For others: plural resource name
 	Group         string `json:"group"`
-	Scope         string `json:"scope"`
+	Version       string `json:"version"`  // API version
+	Resource      string `json:"resource"` // Plural resource name (e.g., "pods", "deployments")
+	Scope         string `json:"scope"`    // "Namespaced" or "Cluster"
 	InstanceCount int    `json:"instanceCount"`
+	Namespaced    bool   `json:"namespaced"` // Whether resource is namespaced
 }
 
 func FromK8sCRD(k8sCrd apiextensionsv1.CustomResourceDefinition, instanceCount int) CRD {
+	// Determine the storage version
+	version := ""
+	for _, v := range k8sCrd.Spec.Versions {
+		if v.Storage {
+			version = v.Name
+			break
+		}
+	}
+	if version == "" && len(k8sCrd.Spec.Versions) > 0 {
+		version = k8sCrd.Spec.Versions[0].Name
+	}
+
+	namespaced := k8sCrd.Spec.Scope == apiextensionsv1.NamespaceScoped
+
 	return CRD{
 		APIVersion:    k8sCrd.APIVersion,
 		Kind:          k8sCrd.Spec.Names.Kind,
 		Name:          k8sCrd.Name,
 		Group:         k8sCrd.Spec.Group,
+		Version:       version,
+		Resource:      k8sCrd.Spec.Names.Plural,
 		Scope:         string(k8sCrd.Spec.Scope),
 		InstanceCount: instanceCount,
+		Namespaced:    namespaced,
+	}
+}
+
+// FromAPIResource creates a CRD model from a discovered API resource.
+// This enables the tool to work with all Kubernetes resources, not just CRDs.
+func FromAPIResource(gv schema.GroupVersion, resource metav1.APIResource, instanceCount int) CRD {
+	scope := "Cluster"
+	if resource.Namespaced {
+		scope = "Namespaced"
+	}
+
+	// For built-in resources (empty group), use the version as part of APIVersion
+	apiVersion := gv.String()
+	if gv.Group == "" {
+		apiVersion = gv.Version
+	}
+
+	return CRD{
+		APIVersion:    apiVersion,
+		Kind:          resource.Kind,
+		Name:          resource.Name, // Use plural name as identifier
+		Group:         gv.Group,
+		Version:       gv.Version,
+		Resource:      resource.Name,
+		Scope:         scope,
+		InstanceCount: instanceCount,
+		Namespaced:    resource.Namespaced,
+	}
+}
+
+// GVR returns the GroupVersionResource for this resource.
+func (c CRD) GVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    c.Group,
+		Version:  c.Version,
+		Resource: c.Resource,
 	}
 }
 
@@ -86,5 +144,6 @@ type Edge struct {
 type ClusterInfo struct {
 	ClusterName   string `json:"clusterName"`
 	ServerVersion string `json:"serverVersion"`
-	NumCRDs       int    `json:"numCRDs"`
+	NumCRDs       int    `json:"numCRDs"` // For backward compatibility, renamed to NumResources internally
+	NumResources  int    `json:"numResources"`
 }
