@@ -19,7 +19,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-wizard/internal/clustermanager"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/web"
 
@@ -36,14 +36,25 @@ var webCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
 
-		client, err := k8s.NewClient(kubeconfig, context, log)
-		if err != nil {
-			log.Error("unable to create k8s client", "err", err)
+		// Initialize cluster manager
+		clusterMgr := clustermanager.NewClusterManager(log)
+
+		// Load all contexts from kubeconfig
+		if err := clusterMgr.LoadAllContexts(kubeconfig); err != nil {
+			log.Error("failed to load contexts from kubeconfig", "err", err)
 			os.Exit(1)
 		}
 
-		server := web.NewServer(client, port, log)
-		log.Info("starting web server", "port", port)
+		// Get default client for backward compatibility
+		client := clusterMgr.GetDefaultClient()
+		if client == nil {
+			log.Error("no default cluster available")
+			os.Exit(1)
+		}
+
+		server := web.NewServerWithClusterManager(client, clusterMgr, port, log)
+
+		log.Info("starting web server", "port", port, "clusters", clusterMgr.Count())
 		if err := server.Start(); err != nil {
 			log.Error("error starting web server", "err", err)
 			os.Exit(1)

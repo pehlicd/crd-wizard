@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from "react"
 import ReactFlow, { Controls, Background, type Node, type Edge, MarkerType } from "reactflow"
 import "reactflow/dist/style.css"
 import { useToast } from "@/hooks/use-toast"
+import { useFetchWithCluster } from "@/hooks/use-fetch-with-cluster"
+import { useCluster } from "@/contexts/cluster-context"
 import type { ResourceGraphData } from "@/lib/crd-data"
 import { Skeleton } from "./ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
@@ -54,6 +56,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "TB") => 
 
 export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
     const { toast } = useToast()
+    const fetchWithCluster = useFetchWithCluster()
+    const { selectedCluster } = useCluster()
     const [graphData, setGraphData] = useState<ResourceGraphData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -64,7 +68,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
             setIsLoading(true)
             setError(null)
             try {
-                const response = await fetch(`${API_BASE_URL}/api/resource-graph?uid=${resourceUid}`, { cache: "no-store" })
+                const response = await fetchWithCluster(`${API_BASE_URL}/api/resource-graph?uid=${resourceUid}`, { cache: "no-store" })
                 if (!response.ok) {
                     const errorText = await response.text()
                     throw new Error(`Failed to fetch graph data: ${response.status} ${errorText}`)
@@ -88,7 +92,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
         }
 
         fetchGraphData()
-    }, [resourceUid, toast])
+    }, [resourceUid, selectedCluster, toast])
 
     const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
         if (!graphData) return { nodes: [], edges: [] }

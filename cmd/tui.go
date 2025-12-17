@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pehlicd/crd-wizard/internal/k8s"
+	"github.com/pehlicd/crd-wizard/internal/clustermanager"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/tui"
 
@@ -40,7 +40,9 @@ in your cluster.
 
 The TUI provides a rich experience for navigating CRDs, viewing their
 instances, and inspecting definitions and events. You can optionally start
-the TUI pre-focused on a specific CRD or Kind.`,
+the TUI pre-focused on a specific CRD or Kind.
+
+Multi-cluster support: Press 'c' in the main view to switch between clusters.`,
 	Example: `
   # Launch the TUI and browse all CRDs
   crd-wizard tui
@@ -56,15 +58,19 @@ the TUI pre-focused on a specific CRD or Kind.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, io.Discard)
 
-		// Initialize the Kubernetes client.
-		client, err := k8s.NewClient(kubeconfig, context, log)
-		if err != nil {
-			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
+		// Initialize cluster manager
+		clusterMgr := clustermanager.NewClusterManager(log)
+
+		// Load all contexts from kubeconfig
+		if err := clusterMgr.LoadAllContexts(kubeconfig); err != nil {
+			fmt.Printf("❌ Failed to load contexts from kubeconfig: %v\n", err)
 			os.Exit(1)
 		}
 
-		// Start the TUI.
-		if err := tui.Start(client, crd, kind); err != nil {
+		fmt.Printf("✅ Loaded %d cluster(s) from kubeconfig\n", clusterMgr.Count())
+
+		// Start the TUI with cluster manager.
+		if err := tui.Start(clusterMgr, crd, kind); err != nil {
 			fmt.Printf("❌ TUI Error: %v\n", err)
 			os.Exit(1)
 		}

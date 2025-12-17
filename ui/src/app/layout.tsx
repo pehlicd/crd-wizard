@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ClusterProvider } from '@/contexts/cluster-context';
 
 export const metadata: Metadata = {
   title: 'CRD Wizard',
@@ -27,8 +28,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
+          <ClusterProvider>
             {children}
             <Toaster />
+          </ClusterProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { CustomResource, K8sEvent } from '@/lib/crd-data';
 import { useToast } from '@/hooks/use-toast';
+import { useFetchWithCluster } from '@/hooks/use-fetch-with-cluster';
+import { useCluster } from '@/contexts/cluster-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,6 +44,8 @@ function CrDetailView() {
   const crName = searchParams.get('crName');
 
   const { toast } = useToast();
+  const fetchWithCluster = useFetchWithCluster();
+  const { selectedCluster } = useCluster();
 
   const { resolvedTheme } = useTheme();
 
@@ -61,7 +65,7 @@ function CrDetailView() {
           fetchUrl += `&namespace=${namespace}`;
         }
 
-        const crResponse = await fetch(fetchUrl, { cache: 'no-store' });
+        const crResponse = await fetchWithCluster(fetchUrl, { cache: 'no-store' });
 
         if (!crResponse.ok) {
           const errorText = await crResponse.text();
@@ -75,7 +79,7 @@ function CrDetailView() {
           setCr(crWithId);
 
           if (crWithId.metadata.uid) {
-            const eventsResponse = await fetch(`${API_BASE_URL}/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store' });
+            const eventsResponse = await fetchWithCluster(`${API_BASE_URL}/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store' });
             if (!eventsResponse.ok) {
               const errorText = await eventsResponse.text();
               throw new Error(`Failed to fetch Events: ${eventsResponse.status} ${errorText}`);
@@ -104,7 +108,7 @@ function CrDetailView() {
     };
 
     fetchData();
-  }, [crdName, namespace, crName, toast]);
+  }, [crdName, namespace, crName, selectedCluster, toast]);
 
   const syntaxHighlighterStyle = useMemo(() => {
     return resolvedTheme === 'dark' ? oneDark : oneLight;
