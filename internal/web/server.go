@@ -28,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
 
@@ -41,10 +42,12 @@ type Server struct {
 	K8sClient *k8s.Client
 	router    *http.ServeMux
 	server    *http.Server
+	aiClient  *ai.Client
 	log       *logger.Logger
+	startTime time.Time
 }
 
-func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
+func NewServer(client *k8s.Client, port string, aiClient *ai.Client, log *logger.Logger) *Server {
 	r := http.NewServeMux()
 	s := &Server{
 		K8sClient: client,
@@ -52,11 +55,13 @@ func NewServer(client *k8s.Client, port string, log *logger.Logger) *Server {
 		server: &http.Server{
 			Addr:         ":" + port,
 			Handler:      r,
-			ReadTimeout:  15 * time.Second,
-			WriteTimeout: 15 * time.Second,
-			IdleTimeout:  15 * time.Second,
+			ReadTimeout:  15 * time.Minute,
+			WriteTimeout: 15 * time.Minute,
+			IdleTimeout:  15 * time.Minute,
 		},
-		log: log,
+		aiClient:  aiClient,
+		log:       log,
+		startTime: time.Now(),
 	}
 	s.registerHandlers()
 	return s
@@ -74,6 +79,10 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/cr", s.CrHandler)
 	apiRouter.HandleFunc("/events", s.EventsHandler)
 	apiRouter.HandleFunc("/resource-graph", s.ResourceGraphHandler)
+	if s.aiClient != nil {
+		apiRouter.HandleFunc("/crd/generate-context", s.GenerateCrdContextHandler)
+	}
+	apiRouter.HandleFunc("/status", s.Status)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
@@ -113,6 +122,71 @@ func serveStaticFiles(staticFS http.FileSystem, w http.ResponseWriter, r *http.R
 	}
 
 	http.ServeContent(w, r, path, fileInfo.ModTime(), file)
+}
+
+type statusResponse struct {
+	Uptime    string `json:"uptime"`
+	AIEnabled bool   `json:"aiEnabled"`
+}
+
+func (s *Server) Status(w http.ResponseWriter, _ *http.Request) {
+	resp := statusResponse{
+		Uptime:    time.Since(s.startTime).String(),
+		AIEnabled: s.aiClient != nil,
+	}
+	s.respondWithJSON(w, http.StatusOK, resp)
+}
+
+// generateContextRequest defines the expected JSON body for the AI context generation endpoint.
+type generateContextRequest struct {
+	Group      string `json:"group"`
+	Version    string `json:"version"`
+	Kind       string `json:"kind"`
+	SchemaJSON string `json:"schemaJSON"`
+}
+
+func (s *Server) GenerateCrdContextHandler(w http.ResponseWriter, r *http.Request) {
+	// Handle CORS preflight requests
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Set CORS header for the actual request
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method != http.MethodPost {
+		s.respondWithJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Only POST method is allowed"})
+		return
+	}
+
+	var reqPayload generateContextRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqPayload); err != nil {
+		s.log.Error("error decoding generate-context request body", "err", err)
+		http.Error(w, "Bad Request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	generatedText, err := s.aiClient.GenerateCrdContext(
+		r.Context(),
+		reqPayload.Group,
+		reqPayload.Version,
+		reqPayload.Kind,
+		reqPayload.SchemaJSON,
+	)
+	if err != nil {
+		s.log.Error("error generating crd context from ollama", "err", err)
+		http.Error(w, "Error communicating with AI service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// The frontend expects a plain text response.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(generatedText))
 }
 
 func (s *Server) ClusterInfoHandler(w http.ResponseWriter, _ *http.Request) {

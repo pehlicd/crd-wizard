@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -33,7 +34,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" //nolint:all
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -321,4 +322,85 @@ func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVe
 		return schema.GroupVersionResource{Group: crd.Spec.Group, Version: storageVersion, Resource: crd.Spec.Names.Plural}, storageVersion
 	}
 	return schema.GroupVersionResource{}, ""
+}
+
+// fetchCRDExamples connects to the cluster and retrieves live examples of a given CRD.
+// It uses the discovery client to find the correct resource name for the given GVK.
+func (c *Client) FetchCRDExamples(ctx context.Context, group, version, kind string) (string, error) {
+	// 1. Use the Discovery client to find the API resource.
+	// This is the robust way to find the plural name (e.g., "certificates").
+	apiResource, err := c.findAPIResource(group, version, kind)
+	if err != nil {
+		return "", fmt.Errorf("could not find API resource for %s/%s, Kind=%s: %w", group, version, kind, err)
+	}
+
+	gvr := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: apiResource.Name, // Use the discovered plural name
+	}
+
+	// 2. Use the Dynamic client to list instances of that resource.
+	// We list across all namespaces.
+	list, err := c.DynamicClient.Resource(gvr).Namespace("").List(ctx, metav1.ListOptions{Limit: 3})
+	if err != nil {
+		return "", fmt.Errorf("failed to list CRD resources for %s: %w", gvr, err)
+	}
+
+	if len(list.Items) == 0 {
+		return "", nil // No examples found, which is not an error.
+	}
+
+	var examples []string
+	for _, item := range list.Items {
+		// Clean up metadata that is irrelevant for a new example.
+		// This makes the context cleaner for the LLM.
+		unstructured.RemoveNestedField(item.Object, "metadata", "uid")
+		unstructured.RemoveNestedField(item.Object, "metadata", "resourceVersion")
+		unstructured.RemoveNestedField(item.Object, "metadata", "creationTimestamp")
+		unstructured.RemoveNestedField(item.Object, "metadata", "generation")
+		unstructured.RemoveNestedField(item.Object, "metadata", "managedFields")
+		unstructured.RemoveNestedField(item.Object, "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration")
+		unstructured.RemoveNestedField(item.Object, "status") // Status is not part of the desired state.
+
+		yamlBytes, err := yaml.Marshal(item.Object)
+		if err != nil {
+			fmt.Printf("Warning: failed to marshal resource item to YAML: %v\n", err)
+			continue
+		}
+		examples = append(examples, string(yamlBytes))
+	}
+
+	return strings.Join(examples, "\n---\n"), nil
+}
+
+// findAPIResource uses the discovery client to find the correct APIResource definition.
+func (c *Client) findAPIResource(group, version, kind string) (*metav1.APIResource, error) {
+	resourceLists, err := c.DiscoveryClient.ServerPreferredResources()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get server preferred resources: %w", err)
+	}
+
+	gv := schema.GroupVersion{Group: group, Version: version}.String()
+	for _, resourceList := range resourceLists {
+		if resourceList.GroupVersion == gv {
+			for _, resource := range resourceList.APIResources {
+				// We match on Kind and ensure the resource supports the "list" and "get" verbs.
+				if resource.Kind == kind {
+					hasList := false
+					for _, verb := range resource.Verbs {
+						if verb == "list" {
+							hasList = true
+							break
+						}
+					}
+					if hasList {
+						return &resource, nil
+					}
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("resource not found")
 }
