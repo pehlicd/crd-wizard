@@ -28,26 +28,26 @@ interface AiCacheState {
 }
 
 const getTypeColor = (type: string) => {
-  const colors = {
-    string: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    number: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-    integer: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-    boolean: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
-    object: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-    array: 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
-  };
-  return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+    const colors = {
+        string: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+        number: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+        integer: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+        boolean: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+        object: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+        array: 'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
+    };
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
 };
 
 const SchemaViewer = ({ schema }: { schema: any }) => {
     if (!schema || !schema.properties) {
         return (
-          <div className="text-center py-8 px-4">
-            <div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Box className="h-6 w-6 text-muted-foreground" />
+            <div className="text-center py-8 px-4">
+                <div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Box className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">No schema definition available for this version.</p>
             </div>
-            <p className="text-muted-foreground text-sm">No schema definition available for this version.</p>
-          </div>
         );
     }
 
@@ -59,10 +59,10 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                     const isRequired = schema.required && schema.required.includes(propName);
 
                     // Refined indentation logic
-                    const indentClass = depth > 0 
-                        ? (depth < 4 
-                            ? `border-l-2 border-primary/10 pl-2 md:pl-4 ml-1 md:ml-2` 
-                            : `border-l-2 border-primary/10 pl-2 ml-1`) 
+                    const indentClass = depth > 0
+                        ? (depth < 4
+                            ? `border-l-2 border-primary/10 pl-2 md:pl-4 ml-1 md:ml-2`
+                            : `border-l-2 border-primary/10 pl-2 ml-1`)
                         : '';
 
                     if (hasSubProperties) {
@@ -73,29 +73,29 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                                             <span className={cn(
-                                            "font-mono font-medium text-foreground break-all text-sm md:text-base",
-                                            isRequired && "text-orange-600 dark:text-orange-400"
+                                                "font-mono font-medium text-foreground break-all text-sm md:text-base",
+                                                isRequired && "text-orange-600 dark:text-orange-400"
                                             )}>
-                                            {propName}
-                                            {isRequired && <span className="text-orange-500 ml-1">*</span>}
+                                                {propName}
+                                                {isRequired && <span className="text-orange-500 ml-1">*</span>}
                                             </span>
                                             <Badge className={cn("text-[10px] md:text-xs font-medium border shrink-0 px-1.5 h-5 md:h-6", getTypeColor(propDetails.type))}>
-                                            {propDetails.type}
+                                                {propDetails.type}
                                             </Badge>
                                             {propDetails.format && (
-                                            <Badge variant="outline" className="text-[10px] md:text-xs font-mono shrink-0 px-1.5 h-5 md:h-6">
-                                                {propDetails.format}
-                                            </Badge>
+                                                <Badge variant="outline" className="text-[10px] md:text-xs font-mono shrink-0 px-1.5 h-5 md:h-6">
+                                                    {propDetails.format}
+                                                </Badge>
                                             )}
                                         </div>
                                     </div>
                                 </CollapsibleTrigger>
                                 {propDetails.description && (
-                                <div className="px-3 md:px-4 pt-2 w-full min-w-0">
-                                    <p className="text-muted-foreground text-xs md:text-sm pl-4 md:pl-7 break-words whitespace-pre-wrap leading-relaxed">
-                                    {propDetails.description}
-                                    </p>
-                                </div>
+                                    <div className="px-3 md:px-4 pt-2 w-full min-w-0">
+                                        <p className="text-muted-foreground text-xs md:text-sm pl-4 md:pl-7 break-words whitespace-pre-wrap leading-relaxed">
+                                            {propDetails.description}
+                                        </p>
+                                    </div>
                                 )}
                                 <CollapsibleContent className={cn("pt-2 w-full min-w-0", depth === 0 ? "pl-1 md:pl-4" : "")}>
                                     <div className={indentClass}>
@@ -104,8 +104,8 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                                             {propDetails.items && propDetails.items.properties && (
                                                 <div className="space-y-2">
                                                     <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground italic font-medium px-2">
-                                                    <div className="w-1.5 h-1.5 bg-primary/50 rounded-full shrink-0"></div>
-                                                    Array items:
+                                                        <div className="w-1.5 h-1.5 bg-primary/50 rounded-full shrink-0"></div>
+                                                        Array items:
                                                     </div>
                                                     {renderProperties(propDetails.items.properties, depth + 1)}
                                                 </div>
@@ -121,50 +121,50 @@ const SchemaViewer = ({ schema }: { schema: any }) => {
                         <div key={propName} className="py-2 md:py-3 px-2 md:px-4 bg-background/30 rounded-lg border border-border/30 w-full min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5 md:gap-2 w-full">
                                 <span className={cn(
-                                "font-mono font-medium text-foreground break-all text-sm md:text-base",
-                                isRequired && "text-orange-600 dark:text-orange-400"
+                                    "font-mono font-medium text-foreground break-all text-sm md:text-base",
+                                    isRequired && "text-orange-600 dark:text-orange-400"
                                 )}>
-                                {propName}
-                                {isRequired && <span className="text-orange-500 ml-1">*</span>}
+                                    {propName}
+                                    {isRequired && <span className="text-orange-500 ml-1">*</span>}
                                 </span>
                                 <Badge className={cn("text-[10px] md:text-xs font-medium border shrink-0 px-1.5 h-5 md:h-6", getTypeColor(propDetails.type))}>
-                                {propDetails.type}
+                                    {propDetails.type}
                                 </Badge>
                                 {propDetails.format && (
-                                <Badge variant="outline" className="text-[10px] md:text-xs font-mono shrink-0 px-1.5 h-5 md:h-6">
-                                    {propDetails.format}
-                                </Badge>
+                                    <Badge variant="outline" className="text-[10px] md:text-xs font-mono shrink-0 px-1.5 h-5 md:h-6">
+                                        {propDetails.format}
+                                    </Badge>
                                 )}
                                 {propDetails.enum && (
-                                <Badge variant="outline" className="text-[10px] md:text-xs shrink-0 px-1.5 h-5 md:h-6">
-                                    enum
-                                </Badge>
+                                    <Badge variant="outline" className="text-[10px] md:text-xs shrink-0 px-1.5 h-5 md:h-6">
+                                        enum
+                                    </Badge>
                                 )}
                             </div>
                             {propDetails.description && (
-                            <p className="text-muted-foreground mt-2 text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed w-full">
-                                {propDetails.description}
-                            </p>
+                                <p className="text-muted-foreground mt-2 text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed w-full">
+                                    {propDetails.description}
+                                </p>
                             )}
                             {propDetails.enum && (
-                            <div className="mt-2 w-full min-w-0">
-                                <p className="text-[10px] md:text-xs text-muted-foreground mb-1">Allowed values:</p>
-                                <div className="flex gap-1 flex-wrap">
-                                {propDetails.enum.map((value: any, index: number) => (
-                                    <Badge key={index} variant="outline" className="text-[10px] md:text-xs font-mono break-all max-w-full whitespace-normal">
-                                    {String(value)}
-                                    </Badge>
-                                ))}
+                                <div className="mt-2 w-full min-w-0">
+                                    <p className="text-[10px] md:text-xs text-muted-foreground mb-1">Allowed values:</p>
+                                    <div className="flex gap-1 flex-wrap">
+                                        {propDetails.enum.map((value: any, index: number) => (
+                                            <Badge key={index} variant="outline" className="text-[10px] md:text-xs font-mono break-all max-w-full whitespace-normal">
+                                                {String(value)}
+                                            </Badge>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
                             )}
                             {propDetails.default !== undefined && (
-                            <div className="mt-2 w-full min-w-0">
-                                <p className="text-[10px] md:text-xs text-muted-foreground mb-1">Default:</p>
-                                <Badge variant="outline" className="text-[10px] md:text-xs font-mono bg-muted/50 break-all whitespace-normal">
-                                {propDetails.default === "" ? <span className="text-muted-foreground">""</span> : String(propDetails.default)}
-                                </Badge>
-                            </div>
+                                <div className="mt-2 w-full min-w-0">
+                                    <p className="text-[10px] md:text-xs text-muted-foreground mb-1">Default:</p>
+                                    <Badge variant="outline" className="text-[10px] md:text-xs font-mono bg-muted/50 break-all whitespace-normal">
+                                        {propDetails.default === "" ? <span className="text-muted-foreground">""</span> : String(propDetails.default)}
+                                    </Badge>
+                                </div>
                             )}
                         </div>
                     );
@@ -197,7 +197,7 @@ const SyntaxHighlightedLine = ({ line }: { line: string }) => {
         if (/^(true|false|null)$/.test(trimmed)) return <span className="text-amber-300">{val}</span>;
         // Strings (quotes)
         if (/^".*"$/.test(trimmed) || /^'.*'$/.test(trimmed)) return <span className="text-emerald-300">{val}</span>;
-        
+
         return <span className="text-slate-200">{val}</span>;
     };
 
@@ -215,16 +215,16 @@ const SyntaxHighlightedLine = ({ line }: { line: string }) => {
             </>
         );
     }
-    
+
     // 3. List Item: - value OR - key: value
     const listMatch = content.match(/^(\s*)(-\s+)(.*)$/);
     if (listMatch) {
         const [, indent, dash, rest] = listMatch;
         const subKeyMatch = rest.match(/^([\w\.\-/"']+)(:\s*)(.*)$/);
-        
+
         if (subKeyMatch) {
             const [, key, colon, val] = subKeyMatch;
-             return (
+            return (
                 <>
                     <span>{indent}</span>
                     <span className="text-slate-400">{dash}</span>
@@ -235,7 +235,7 @@ const SyntaxHighlightedLine = ({ line }: { line: string }) => {
                 </>
             );
         }
-        
+
         return (
             <>
                 <span>{indent}</span>
@@ -321,25 +321,25 @@ const AIResponseDisplay = ({ response }: { response: string }) => {
             <div className="prose prose-sm dark:prose-invert max-w-none w-full break-words overflow-hidden text-foreground/90">
                 <ReactMarkdown
                     components={{
-                        h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground tracking-tight" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-lg font-semibold mt-5 mb-3 text-foreground border-b border-border/40 pb-1" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-3 leading-relaxed whitespace-pre-wrap" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1 marker:text-primary/70" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1 marker:text-primary/70" {...props} />,
-                        li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                        blockquote: ({node, ...props}) => (
+                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground tracking-tight" {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="text-lg font-semibold mt-5 mb-3 text-foreground border-b border-border/40 pb-1" {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
+                        p: ({ node, ...props }) => <p className="mb-3 leading-relaxed whitespace-pre-wrap" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 marker:text-primary/70" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 marker:text-primary/70" {...props} />,
+                        li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                        blockquote: ({ node, ...props }) => (
                             <blockquote className="border-l-4 border-primary/30 pl-4 italic my-4 text-muted-foreground bg-background/50 py-2 pr-2 rounded-r" {...props} />
                         ),
-                        a: ({node, ...props}) => <a className="text-primary hover:underline font-medium decoration-primary/30 underline-offset-4" {...props} />,
-                        table: ({node, ...props}) => (
+                        a: ({ node, ...props }) => <a className="text-primary hover:underline font-medium decoration-primary/30 underline-offset-4" {...props} />,
+                        table: ({ node, ...props }) => (
                             <div className="overflow-x-auto w-full my-4 rounded-md border border-border/50 bg-background/50">
                                 <table className="w-full text-sm text-left" {...props} />
                             </div>
                         ),
-                        thead: ({node, ...props}) => <thead className="bg-muted/50 border-b border-border/50" {...props} />,
-                        th: ({node, ...props}) => <th className="px-4 py-2 font-medium text-muted-foreground" {...props} />,
-                        td: ({node, ...props}) => <td className="px-4 py-2 border-b border-border/50 last:border-0" {...props} />,
+                        thead: ({ node, ...props }) => <thead className="bg-muted/50 border-b border-border/50" {...props} />,
+                        th: ({ node, ...props }) => <th className="px-4 py-2 font-medium text-muted-foreground" {...props} />,
+                        td: ({ node, ...props }) => <td className="px-4 py-2 border-b border-border/50 last:border-0" {...props} />,
                         code({ inline, className, children, ...props }: React.HTMLAttributes<HTMLElement> & { inline?: boolean; children?: React.ReactNode }) {
                             const codeString = String(children ?? '');
                             const match = /language-(\w+)/.exec(className || '');
@@ -423,7 +423,7 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
 
     const handleGenerateContext = async () => {
         const crdName = crd.metadata.name;
-        
+
         // Update cache to loading state for this CRD and CLEAR previous response
         setAiCache(prev => ({
             ...prev,
@@ -450,7 +450,7 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
             }
 
             const textResponse = await res.text();
-            
+
             // Update cache with response
             setAiCache(prev => ({
                 ...prev,
@@ -460,10 +460,10 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
             // Update cache with error
             setAiCache(prev => ({
                 ...prev,
-                [crdName]: { 
-                    response: null, 
-                    isLoading: false, 
-                    error: e.message || 'An unknown error occurred.' 
+                [crdName]: {
+                    response: null,
+                    isLoading: false,
+                    error: e.message || 'An unknown error occurred.'
                 }
             }));
         }
@@ -489,11 +489,11 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                                     <span className="truncate break-all">{crd.spec.names.kind}</span>
                                 </CardTitle>
                                 <div className="flex items-center gap-2 w-full md:w-auto mt-1 md:mt-0 flex-wrap sm:flex-nowrap">
-                                    <Button 
+                                    <Button
                                         className="flex-1 sm:flex-none"
                                         size="sm"
-                                        onClick={handleGenerateContext} 
-                                        disabled={currentAiState.isLoading || !isAiEnabled} 
+                                        onClick={handleGenerateContext}
+                                        disabled={currentAiState.isLoading || !isAiEnabled}
                                         title={!isAiEnabled ? "AI features are not enabled by the server." : "Ask AI for insights on this CRD."}
                                     >
                                         {currentAiState.isLoading ? (
@@ -520,45 +520,85 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                                 {crd.metadata.name}
                             </CardDescription>
                         </CardHeader>
-                        
+
                         <CardContent className="p-3 md:p-6 w-full max-w-full">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm mb-4 md:mb-6 pb-4 md:pb-6 border-b border-border w-full">
-                                <div className="flex items-start md:items-center gap-2 min-w-0">
-                                    <Globe className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 md:mt-0" />
-                                    <strong className="shrink-0">Group:</strong> 
-                                    <span className="break-all">{crd.spec.group}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="secondary" className="text-xs md:text-base py-0.5 md:py-1 px-2 md:px-3">{crd.spec.scope}</Badge>
-                                </div>
-                                {typeof crd.instanceCount === 'number' && (
-                                    <div className="flex items-center gap-2">
-                                        <Package className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <strong>Instances:</strong>
-                                        <span className={crd.instanceCount === 0 ? "text-muted-foreground" : ""}>
-                                            {crd.instanceCount > 0 ? `${crd.instanceCount} resource(s)` : 'Not in use'}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="flex flex-col md:flex-row md:items-center gap-2 col-span-1 md:col-span-2">
-                                    <strong>Versions:</strong>
-                                    <div className="flex gap-1 flex-wrap">
-                                        {crd.spec.versions.map(v => (
-                                            <Badge key={v.name} variant={v.storage ? 'default' : 'secondary'} className="text-xs">{v.name}</Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                                {crd.spec.names.shortNames && crd.spec.names.shortNames.length > 0 && (
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2 col-span-1 md:col-span-2">
-                                        <strong>Short Names:</strong>
-                                        <div className="flex gap-1 flex-wrap">
-                                            {crd.spec.names.shortNames.map(sn => (
-                                                <Badge key={sn} variant="outline" className="font-mono text-xs">{sn}</Badge>
-                                            ))}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                <Card className="p-4 bg-background/50 border-border/50">
+                                    <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+                                        <Globe className="h-4 w-4 text-primary" />
+                                        Resource Information
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">Group</span>
+                                            <span className="text-sm font-medium">{crd.spec.group || 'Core'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">Scope</span>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {crd.spec.scope}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">Kind</span>
+                                            <span className="text-sm font-medium font-mono">{crd.spec.names.kind}</span>
                                         </div>
                                     </div>
-                                )}
+                                </Card>
+
+                                <Card className="p-4 bg-background/50 border-border/50">
+                                    <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+                                        <Package className="h-4 w-4 text-primary" />
+                                        Usage Statistics
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {typeof crd.instanceCount === 'number' && (
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-muted-foreground">Active Instances</span>
+                                                <Badge
+                                                    variant={crd.instanceCount > 0 ? 'default' : 'outline'}
+                                                    className={cn(
+                                                        "font-medium",
+                                                        crd.instanceCount > 0
+                                                            ? "bg-success/10 text-success"
+                                                            : "bg-muted text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {crd.instanceCount}
+                                                </Badge>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-sm text-muted-foreground">Versions</span>
+                                            <div className="flex gap-1 flex-wrap max-w-32">
+                                                {crd.spec.versions.map(v => (
+                                                    <Badge
+                                                        key={v.name}
+                                                        variant={v.storage ? 'default' : 'outline'}
+                                                        className="text-xs"
+                                                    >
+                                                        {v.name}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
                             </div>
+
+                            {/* Short Names */}
+                            {crd.spec.names.shortNames && crd.spec.names.shortNames.length > 0 && (
+                                <Card className="p-4 bg-background/50 border-border/50 mb-6">
+                                    <h3 className="font-semibold text-sm text-foreground mb-3">Short Names</h3>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {crd.spec.names.shortNames.map(shortName => (
+                                            <Badge key={shortName} variant="outline" className="font-mono text-xs bg-primary/5">
+                                                {shortName}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )}
 
                             {(currentAiState.isLoading || currentAiState.error || currentAiState.response) && (
                                 <div className="mb-6 w-full max-w-full overflow-hidden">
