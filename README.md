@@ -92,7 +92,7 @@ kubectl apply -k deploy/k8s/base
 You can also deploy directly without cloning the repository:
 
 ```shell
-kubectl apply -k github.com/pehlicd/crd-wizard/deploy/k8s/base?ref=main
+kubectl apply -k 'github.com/pehlicd/crd-wizard/deploy/k8s/base?ref=main'
 ```
 
 **Custom Deployment (specify version):**
