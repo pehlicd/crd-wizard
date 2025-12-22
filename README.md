@@ -80,6 +80,36 @@ sh -c "$(curl -sSflL 'https://raw.githubusercontent.com/pehlicd/crd-wizard/main/
 go install github.com/pehlicd/crd-wizard@latest
 ```
 
+### Kubernetes Deployment
+You can deploy CRD Wizard to your Kubernetes cluster using Kustomize.
+
+**Default Deployment (uses `latest` tag):**
+```shell
+kubectl apply -k deploy/k8s/base
+```
+
+**Install directly from GitHub:**
+You can also deploy directly without cloning the repository:
+
+```shell
+kubectl apply -k github.com/pehlicd/crd-wizard/deploy/k8s/base?ref=main
+```
+
+**Custom Deployment (specify version):**
+If you need to use a specific version due to cluster policies or stability requirements:
+
+```shell
+cd deploy/k8s/base
+kustomize edit set image ghcr.io/pehlicd/crd-wizard:v0.1.6
+kubectl apply -k .
+```
+
+The deployment includes:
+- **Deployment**: Runs the web server.
+- **Service**: Exposes port 80 utilizing port 8080.
+- **Ingress**: Provides external access (check `deploy/k8s/base/ingress.yaml` for annotations).
+- **RBAC**: `ClusterRole` with extensive permissions to visualize all resources.
+
 ## How to Use
 Using CR(D) Wizard is super simple. Just run the following command:
 
