@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -322,6 +323,57 @@ func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVe
 		return schema.GroupVersionResource{Group: crd.Spec.Group, Version: storageVersion, Resource: crd.Spec.Names.Plural}, storageVersion
 	}
 	return schema.GroupVersionResource{}, ""
+}
+
+// DryRun performs a server-side dry-run of the provided YAML manifest to validate it against the cluster.
+func (c *Client) DryRun(ctx context.Context, manifest string) error {
+	// 1. Unmarshal YAML into Unstructured.
+	// We use k8s.io/apimachinery/pkg/util/yaml because it handles generic YAML-to-JSON
+	// conversion better than yaml.v2 for the Unstructured type.
+	dec := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(manifest), 4096)
+	obj := &unstructured.Unstructured{}
+	if err := dec.Decode(obj); err != nil {
+		return fmt.Errorf("failed to decode manifest content: %w", err)
+	}
+
+	gvk := obj.GroupVersionKind()
+	if gvk.Empty() {
+		return fmt.Errorf("manifest is missing apiVersion or kind")
+	}
+
+	// 2. Discover the API Resource (GVR)
+	apiResource, err := c.findAPIResource(gvk.Group, gvk.Version, gvk.Kind)
+	if err != nil {
+		return fmt.Errorf("could not resolve resource for %s: %w", gvk, err)
+	}
+
+	gvr := schema.GroupVersionResource{
+		Group:    gvk.Group,
+		Version:  gvk.Version,
+		Resource: apiResource.Name,
+	}
+
+	// 3. Prepare Dynamic Request
+	var resourceClient dynamic.ResourceInterface
+	if apiResource.Namespaced {
+		ns := obj.GetNamespace()
+		if ns == "" {
+			ns = "default" // default namespace if none provided
+		}
+		resourceClient = c.DynamicClient.Resource(gvr).Namespace(ns)
+	} else {
+		resourceClient = c.DynamicClient.Resource(gvr)
+	}
+
+	// 4. Execute Create with DryRun option
+	_, err = resourceClient.Create(ctx, obj, metav1.CreateOptions{
+		DryRun: []string{metav1.DryRunAll},
+	})
+	if err != nil {
+		return fmt.Errorf("dry-run failed: %w", err)
+	}
+
+	return nil
 }
 
 // fetchCRDExamples connects to the cluster and retrieves live examples of a given CRD.

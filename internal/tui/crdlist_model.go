@@ -237,6 +237,13 @@ func (m *crdListModel) updateTableRows() {
 	m.table.SetRows(rows)
 }
 
+func (m crdListModel) SelectedItem() *models.CRD {
+	if m.table.Cursor() >= 0 && m.table.Cursor() < len(m.filteredCRDs) {
+		return &m.filteredCRDs[m.table.Cursor()]
+	}
+	return nil
+}
+
 func (m crdListModel) View() string {
 	if m.err != nil {
 		return fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err)
@@ -273,7 +280,7 @@ func (m crdListModel) View() string {
 			m.table.View(),
 		)
 	} else {
-		help = "[↑/↓] Navigate | [Enter] Select | [/] Filter | [r] Refresh | [i] Info | [q] Quit"
+		help = "[↑/↓] Navigate | [Enter] Select | [a] Analyze | [/] Filter | [r] Refresh | [i] Info | [q] Quit"
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),

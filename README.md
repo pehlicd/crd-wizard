@@ -111,6 +111,36 @@ plugins:
       - "crd-wizard tui --kind $COL-KIND"
 ```
 
+## AI Capabilities
+
+CR(D) Wizard integrates with LLMs to provide intelligent documentation and explanations for your CRDs.
+
+### Configuration
+
+You can enable AI features by passing the `--enable-ai` flag. By default, it uses [Ollama](https://ollama.com/) running locally.
+
+**Ollama (Default)**:
+```shell
+crd-wizard tui --enable-ai
+# Defaults to http://localhost:11434 and model 'llama3.1'
+```
+
+**Google Gemini**:
+```shell
+crd-wizard tui --enable-ai \
+  --ai-provider gemini \
+  --gemini-api-key "YOUR_API_KEY"
+```
+
+### Usage
+
+#### TUI
+In the CRD list view, navigate to a CRD and press **`a`**.
+An overlay will appear showing the AI-generated analysis of the CRD schema.
+
+#### Web Interface
+When AI is enabled, the web interface exposes AI features (via `/crd/generate-context` endpoint) to provide insights directly in the dashboard.
+
 ## How to contribute
 
 If you'd like to contribute to CR(D) Wizard, feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/pehlicd/crd-wizard). Your feedback and contributions are highly appreciated!

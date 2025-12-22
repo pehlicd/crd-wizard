@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
+	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/tui"
@@ -63,8 +65,27 @@ the TUI pre-focused on a specific CRD or Kind.`,
 			os.Exit(1)
 		}
 
+		var aiClient *ai.Client
+		if enableAI {
+			aiConfig := ai.Config{
+				Provider:        ai.AIProvider(aiProvider),
+				Model:           aiModel,
+				OllamaHost:      ollamaHost,
+				RequestTimeout:  time.Duration(requestTimeout) * time.Minute,
+				OllamaNumCtx:    ollamaNumCtx,
+				OllamaKeepAlive: ollamaKeepAlive,
+				EnableCache:     enableCache,
+				EnableSearch:    enableSearch,
+				SearchProvider:  ai.SearchProvider(searchProvider),
+				GoogleAPIKey:    googleAPIKey,
+				GoogleCX:        googleCX,
+				GeminiAPIKey:    geminiAPIKey,
+			}
+			aiClient = ai.NewClient(aiConfig, client, log)
+		}
+
 		// Start the TUI.
-		if err := tui.Start(client, crd, kind); err != nil {
+		if err := tui.Start(client, aiClient, crd, kind); err != nil {
 			fmt.Printf("❌ TUI Error: %v\n", err)
 			os.Exit(1)
 		}
