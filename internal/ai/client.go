@@ -62,7 +62,12 @@ func NewClient(c Config, kubeClient *k8s.Client, l *logger.Logger) *Client {
 	case ProviderOllama:
 		provider = NewOllamaProvider(c, httpClient)
 	case ProviderGemini:
-		provider = NewGeminiProvider(c.GeminiAPIKey, c.Model)
+		var err error
+		provider, err = NewGeminiProvider(context.Background(), c.GeminiAPIKey, c.Model)
+		if err != nil {
+			l.Warn("failed to initialize gemini provider, falling back to ollama", "err", err)
+			provider = NewOllamaProvider(c, httpClient)
+		}
 	default:
 		// Fallback to Ollama or error? For now, fallback or panic if strict
 		l.Warn("Unknown provider, falling back to Ollama", "provider", c.Provider)
