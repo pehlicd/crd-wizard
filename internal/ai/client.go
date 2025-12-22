@@ -42,7 +42,7 @@ func NewClient(c Config, kubeClient *k8s.Client, l *logger.Logger) *Client {
 	}
 	// Default to Ollama if no provider specified
 	if c.Provider == "" {
-		c.Provider = AIProviderOllama
+		c.Provider = ProviderOllama
 	}
 	// Default to DDG if search is enabled but no provider specified
 	if c.EnableSearch && c.SearchProvider == "" {
@@ -59,9 +59,9 @@ func NewClient(c Config, kubeClient *k8s.Client, l *logger.Logger) *Client {
 
 	var provider LLMProvider
 	switch c.Provider {
-	case AIProviderOllama:
+	case ProviderOllama:
 		provider = NewOllamaProvider(c, httpClient)
-	case AIProviderGemini:
+	case ProviderGemini:
 		provider = NewGeminiProvider(c.GeminiAPIKey, c.Model)
 	default:
 		// Fallback to Ollama or error? For now, fallback or panic if strict

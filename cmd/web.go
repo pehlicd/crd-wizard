@@ -52,7 +52,7 @@ var webCmd = &cobra.Command{
 		if enableAI {
 			// Construct the AI Config from flags
 			aiConfig := ai.Config{
-				Provider:        ai.AIProvider(aiProvider),
+				Provider:        ai.Provider(aiProvider),
 				Model:           aiModel,
 				OllamaHost:      ollamaHost,
 				RequestTimeout:  time.Duration(requestTimeout) * time.Minute,

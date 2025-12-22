@@ -28,7 +28,7 @@ func NewOllamaProvider(c Config, client *http.Client) *OllamaProvider {
 }
 
 func (p *OllamaProvider) Name() string {
-	return string(AIProviderOllama)
+	return string(ProviderOllama)
 }
 
 // Generate handles the raw HTTP interaction with Ollama

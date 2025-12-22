@@ -68,7 +68,7 @@ the TUI pre-focused on a specific CRD or Kind.`,
 		var aiClient *ai.Client
 		if enableAI {
 			aiConfig := ai.Config{
-				Provider:        ai.AIProvider(aiProvider),
+				Provider:        ai.Provider(aiProvider),
 				Model:           aiModel,
 				OllamaHost:      ollamaHost,
 				RequestTimeout:  time.Duration(requestTimeout) * time.Minute,

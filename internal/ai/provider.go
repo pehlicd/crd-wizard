@@ -13,17 +13,17 @@ type LLMProvider interface {
 	Name() string
 }
 
-type AIProvider string
+type Provider string
 
 const (
-	AIProviderOllama    AIProvider = "ollama"
-	AIProviderGemini    AIProvider = "gemini"
-	AIProviderOpenAI    AIProvider = "openai"
-	AIProviderAnthropic AIProvider = "anthropic"
+	ProviderOllama    Provider = "ollama"
+	ProviderGemini    Provider = "gemini"
+	ProviderOpenAI    Provider = "openai"
+	ProviderAnthropic Provider = "anthropic"
 )
 
 type Config struct {
-	Provider AIProvider
+	Provider Provider
 	Model    string
 
 	// Generic Timeouts
