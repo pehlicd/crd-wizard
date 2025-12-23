@@ -88,3 +88,26 @@ type ClusterInfo struct {
 	ServerVersion string `json:"serverVersion"`
 	NumCRDs       int    `json:"numCRDs"`
 }
+
+type Status int
+
+const (
+	StatusHealthy Status = iota
+	StatusUnhealthy
+)
+
+var StatusToString = map[Status]string{
+	StatusHealthy:   "healthy",
+	StatusUnhealthy: "unhealthy",
+}
+
+func (s Status) String() string {
+	return StatusToString[s]
+}
+
+// Health represents the health status of the application.
+type Health struct {
+	Status       string `json:"status"`
+	ClusterCount int    `json:"clusterCount"`
+	Message      string `json:"message,omitempty"`
+}

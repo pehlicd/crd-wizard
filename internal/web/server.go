@@ -86,6 +86,9 @@ func (s *Server) registerHandlers() {
 	apiRouter.HandleFunc("/status", s.Status)
 	s.router.Handle("/api/", http.StripPrefix("/api", s.log.Middleware(apiRouter)))
 
+	// Health endpoint is registered without logging middleware to avoid noise in logs
+	s.router.HandleFunc("/health", s.HealthHandler)
+
 	staticFS, _ := fs.Sub(staticFiles, "static")
 	uiFile := http.FS(staticFS)
 	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -357,6 +360,36 @@ func (s *Server) ResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.respondWithJSON(w, http.StatusOK, graph)
+}
+
+func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	clusterCount := s.ClusterManager.ClusterCount()
+
+	client, err := s.getClientForRequest(r)
+	if err != nil {
+		s.log.Error("cluster not found", "err", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var status models.Health
+	err = client.CheckHealth(r.Context())
+	if err != nil {
+		s.log.Error("health check failed", "err", err)
+		status = models.Health{
+			Status:       models.StatusUnhealthy.String(),
+			ClusterCount: clusterCount,
+			Message:      err.Error(),
+		}
+		s.respondWithJSON(w, http.StatusServiceUnavailable, status)
+		return
+	}
+
+	status = models.Health{
+		Status:       models.StatusHealthy.String(),
+		ClusterCount: clusterCount,
+	}
+	s.respondWithJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) respondWithJSON(w http.ResponseWriter, code int, payload any) {
