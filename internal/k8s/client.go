@@ -458,7 +458,7 @@ func (c *Client) findAPIResource(group, version, kind string) (*metav1.APIResour
 }
 
 // CheckHealth verifies connectivity to the Kubernetes API server.
-func (c *Client) CheckHealth(ctx context.Context) error {
+func (c *Client) CheckHealth(_ context.Context) error {
 	_, err := c.DiscoveryClient.ServerVersion()
 	if err != nil {
 		return fmt.Errorf("kubernetes API is not accessible: %w", err)

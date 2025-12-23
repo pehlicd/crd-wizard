@@ -8,11 +8,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/pehlicd/crd-wizard/internal/generator"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -91,7 +92,7 @@ Supported formats are HTML and Markdown.`,
 					filename = fmt.Sprintf("%s/%s", exportOutput, filename)
 				}
 
-				err = os.WriteFile(filename, content, 0644)
+				err = os.WriteFile(filename, content, 0644) //nolint:gosec // 0644 is intended for documentation
 				if err != nil {
 					log.Error("failed to write file", "file", filename, "err", err)
 					continue
@@ -126,7 +127,7 @@ Supported formats are HTML and Markdown.`,
 					log.Error("failed to write to stdout", "err", err)
 				}
 			} else {
-				err = os.WriteFile(outputTarget, content, 0644)
+				err = os.WriteFile(outputTarget, content, 0644) //nolint:gosec // 0644 is intended for documentation
 				if err != nil {
 					log.Error("failed to write file", "file", outputTarget, "err", err)
 					os.Exit(1)

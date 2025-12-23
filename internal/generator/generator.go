@@ -22,8 +22,9 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/pehlicd/crd-wizard/internal/models"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	"github.com/pehlicd/crd-wizard/internal/models"
 )
 
 // Generator handles the generation of documentation from CRDs.

@@ -9,49 +9,39 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pehlicd/crd-wizard/internal/generator"
-	"github.com/pehlicd/crd-wizard/internal/logger"
-	"github.com/pehlicd/crd-wizard/internal/models"
-	"github.com/pehlicd/crd-wizard/internal/util"
 	"github.com/spf13/cobra"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/pehlicd/crd-wizard/internal/generator"
+	"github.com/pehlicd/crd-wizard/internal/giturl"
+	"github.com/pehlicd/crd-wizard/internal/logger"
+	"github.com/pehlicd/crd-wizard/internal/models"
 )
 
 var (
 	generateFile string
-	generateUrl  string
+	generateURL  string
 )
 
 // generateCmd represents the generate command
 var generateCmd = &cobra.Command{
 	Use:   "generate",
-	Short: "Generate documentation from a local CRD file",
-	Long: `Generate documentation (HTML or Markdown) from a local CRD YAML or JSON file.
-This allows you to verify documentation before applying the CRD to a cluster, or to generate docs in CI/CD pipelines.`,
-	Example: `
-  # Generate HTML from a local file
-  crd-wizard generate -f ./crd.yaml
-
-  # Generate Markdown and output to stdout
-  crd-wizard generate -f ./crd.yaml --format md -o -
-`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Short: "Generate documentation from a CRD file",
+	Long: `Generate documentation from a CRD file in either HTML or Markdown format.
+Example:
+  crd-wizard generate -f path/to/crd.yaml -o html > doc.html
+  crd-wizard generate -f path/to/crd.yaml -o markdown > doc.md`,
+	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
 
-		if generateFile == "" && generateUrl == "" {
-			log.Error("error: --file or --url flag is required")
-			os.Exit(1)
-		}
-
-		var data []byte
+		var crdContent []byte
 		var err error
 
-		if generateUrl != "" {
-			rawURL := util.ConvertGitUrlToRaw(generateUrl)
-			// log.Info("fetching CRD from URL", "original", generateUrl, "raw", rawURL) // Info log might pollute output if stdout is used for content? No, stdout is used for generated content. Logs go to Stderr.
+		if generateURL != "" {
+			rawURL := giturl.ConvertGitURLToRaw(generateURL)
 
-			resp, err := http.Get(rawURL)
+			resp, err := http.Get(rawURL) //nolint:gosec // user supplied url is intended used for CLI purposes
 			if err != nil {
 				log.Error("failed to fetch CRD from URL", "url", rawURL, "err", err)
 				os.Exit(1)
@@ -65,23 +55,26 @@ This allows you to verify documentation before applying the CRD to a cluster, or
 
 			// Read limited amount to prevent abuse
 			const maxFileSize = 10 * 1024 * 1024 // 10MB
-			data, err = io.ReadAll(io.LimitReader(resp.Body, maxFileSize))
+			crdContent, err = io.ReadAll(io.LimitReader(resp.Body, maxFileSize))
 			if err != nil {
 				log.Error("failed to read CRD content", "err", err)
 				os.Exit(1)
 			}
-		} else {
+		} else if generateFile != "" {
 			// Read file
-			data, err = os.ReadFile(generateFile)
+			crdContent, err = os.ReadFile(generateFile)
 			if err != nil {
 				log.Error("failed to read file", "file", generateFile, "err", err)
 				os.Exit(1)
 			}
+		} else {
+			log.Error("error: --file or --url flag is required")
+			os.Exit(1)
 		}
 
 		// Parse YAML/JSON to CRD
 		var crd apiextensionsv1.CustomResourceDefinition
-		if err := yaml.Unmarshal(data, &crd); err != nil {
+		if err := yaml.Unmarshal(crdContent, &crd); err != nil {
 			log.Error("failed to parse CRD", "err", err)
 			os.Exit(1)
 		}
@@ -107,7 +100,7 @@ This allows you to verify documentation before applying the CRD to a cluster, or
 				log.Error("failed to write to stdout", "err", err)
 			}
 		} else {
-			err = os.WriteFile(outputTarget, content, 0644)
+			err = os.WriteFile(outputTarget, content, 0644) //nolint:gosec // 0644 is intended for documentation
 			if err != nil {
 				log.Error("failed to write file", "file", outputTarget, "err", err)
 				os.Exit(1)
@@ -119,7 +112,7 @@ This allows you to verify documentation before applying the CRD to a cluster, or
 
 func init() {
 	generateCmd.Flags().StringVarP(&generateFile, "file", "f", "", "Path to the CRD file (YAML or JSON)")
-	generateCmd.Flags().StringVarP(&generateUrl, "url", "u", "", "URL to the CRD file (supports GitHub/GitLab blob URLs)")
+	generateCmd.Flags().StringVarP(&generateURL, "url", "u", "", "URL to the CRD file (Git provider)")
 	generateCmd.Flags().StringVar(&exportFormat, "format", "html", "Output format (html or markdown)")
 	generateCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "Output path (file or directory, use - for stdout)")
 

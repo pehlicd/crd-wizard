@@ -34,10 +34,10 @@ import (
 
 	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/generator"
+	"github.com/pehlicd/crd-wizard/internal/giturl"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
 	"github.com/pehlicd/crd-wizard/internal/logger"
 	"github.com/pehlicd/crd-wizard/internal/models"
-	"github.com/pehlicd/crd-wizard/internal/util"
 )
 
 //go:embed static/*
@@ -198,7 +198,7 @@ func (s *Server) GenerateCrdContextHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// The frontend expects a plain text response.
+	// If success, just return the content as text strings
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(generatedText))
@@ -459,7 +459,7 @@ func (s *Server) ExportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.%s\"", crdName, getExtension(format)))
-	w.Write(content)
+	_, _ = w.Write(content)
 }
 
 // ExportAllHandler handles the batch export of all CRD documentation as a ZIP file.
@@ -536,7 +536,9 @@ func (s *Server) ExportAllHandler(w http.ResponseWriter, r *http.Request) {
 				s.log.Error("failed to create zip entry", "name", fileName, "err", err)
 				return
 			}
-			f.Write(content)
+			if _, err := f.Write(content); err != nil {
+				s.log.Error("failed to write zip entry content", "name", fileName, "err", err)
+			}
 
 		}(crdItem.Name)
 	}
@@ -566,10 +568,10 @@ func (s *Server) GenerateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If content is empty but URL is provided, fetch it
 	if len(crdContent) == 0 && req.URL != "" {
-		rawURL := util.ConvertGitUrlToRaw(req.URL)
+		rawURL := giturl.ConvertGitURLToRaw(req.URL)
 		s.log.Info("fetching CRD from URL", "original", req.URL, "raw", rawURL)
 
-		resp, err := http.Get(rawURL)
+		resp, err := http.Get(rawURL) //nolint:gosec // user supplied url is intended
 		if err != nil {
 			s.log.Error("failed to fetch CRD from URL", "url", rawURL, "err", err)
 			http.Error(w, "Failed to fetch CRD: "+err.Error(), http.StatusBadRequest)
@@ -588,7 +590,7 @@ func (s *Server) GenerateHandler(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(io.LimitReader(resp.Body, maxFileSize))
 		if err != nil {
 			s.log.Error("failed to read CRD content", "err", err)
-			http.Error(w, "Failed to read CRD content: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Failed to read CRD content", http.StatusInternalServerError)
 			return
 		}
 		crdContent = content
@@ -623,7 +625,7 @@ func (s *Server) GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain") // Return content directly in body
-	w.Write(content)
+	_, _ = w.Write(content)
 }
 
 func getExtension(format string) string {
