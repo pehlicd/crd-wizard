@@ -58,12 +58,13 @@ the TUI pre-focused on a specific CRD or Kind.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, io.Discard)
 
-		// Initialize the Kubernetes client.
-		client, err := k8s.NewClient(kubeconfig, context, log)
+		// Initialize the ClusterManager to load all contexts.
+		clusterManager, err := k8s.NewClusterManager(kubeconfig, log)
 		if err != nil {
-			fmt.Printf("❌ Could not create Kubernetes client: %v\n", err)
+			fmt.Printf("❌ Could not create cluster manager: %v\n", err)
 			os.Exit(1)
 		}
+		fmt.Printf("✅ Loaded %d cluster(s) from kubeconfig\n", clusterManager.ClusterCount())
 
 		var aiClient *ai.Client
 		if enableAI {
@@ -81,11 +82,12 @@ the TUI pre-focused on a specific CRD or Kind.`,
 				GoogleCX:        googleCX,
 				GeminiAPIKey:    geminiAPIKey,
 			}
-			aiClient = ai.NewClient(aiConfig, client, log)
+			// AI client needs a single K8s client for context fetching, use current
+			aiClient = ai.NewClient(aiConfig, clusterManager.GetCurrentClient(), log)
 		}
 
 		// Start the TUI.
-		if err := tui.Start(client, aiClient, crd, kind); err != nil {
+		if err := tui.Start(clusterManager, aiClient, crd, kind); err != nil {
 			fmt.Printf("❌ TUI Error: %v\n", err)
 			os.Exit(1)
 		}

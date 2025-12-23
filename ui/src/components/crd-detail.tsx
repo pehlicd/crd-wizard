@@ -19,6 +19,7 @@ const API_BASE_URL = '';
 interface CrdDetailProps {
     crd: CRD | null;
     onBack?: () => void;
+    selectedCluster?: string;
 }
 
 interface AiCacheState {
@@ -375,7 +376,7 @@ const AIResponseDisplay = ({ response }: { response: string }) => {
 };
 
 
-export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
+export default function CrdDetail({ crd, onBack, selectedCluster }: CrdDetailProps) {
     // Cache for AI responses keyed by CRD name
     const [aiCache, setAiCache] = useState<Record<string, AiCacheState>>({});
     const [isAiEnabled, setIsAiEnabled] = useState(false);
@@ -433,9 +434,15 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
         try {
             const schemaString = JSON.stringify(latestVersion.schema?.openAPIV3Schema || {});
 
+            // Build headers including cluster selection
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (selectedCluster) {
+                headers['X-Cluster-Name'] = selectedCluster;
+            }
+
             const res = await fetch(`${API_BASE_URL}/api/crd/generate-context`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     group: crd.spec.group,
                     version: latestVersion.name,
@@ -508,7 +515,7 @@ export default function CrdDetail({ crd, onBack }: CrdDetailProps) {
                                             </>
                                         )}
                                     </Button>
-                                    <a href={`/instances?crdName=${crd.metadata.name}`} className="flex-1 sm:flex-none">
+                                    <a href={`/instances?crdName=${crd.metadata.name}${selectedCluster ? `&cluster=${selectedCluster}` : ''}`} className="flex-1 sm:flex-none">
                                         <Button variant="outline" className="w-full" size="sm">
                                             <LayoutList className="mr-2 h-3 w-3 md:h-4 md:w-4" />
                                             <span className="hidden sm:inline">View</span> Instances

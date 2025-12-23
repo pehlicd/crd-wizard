@@ -41,9 +41,9 @@ var webCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
 
-		client, err := k8s.NewClient(kubeconfig, context, log)
+		clusterManager, err := k8s.NewClusterManager(kubeconfig, log)
 		if err != nil {
-			log.Error("unable to create k8s client", "err", err)
+			log.Error("unable to create cluster manager", "err", err)
 			os.Exit(1)
 		}
 
@@ -68,7 +68,8 @@ var webCmd = &cobra.Command{
 				GeminiAPIKey:   geminiAPIKey,
 			}
 
-			aiClient = ai.NewClient(aiConfig, client, log)
+			// AI client needs a single K8s client for context fetching, use current
+			aiClient = ai.NewClient(aiConfig, clusterManager.GetCurrentClient(), log)
 
 			log.Info("AI features enabled",
 				"provider", aiProvider,
@@ -79,8 +80,8 @@ var webCmd = &cobra.Command{
 			)
 		}
 
-		server := web.NewServer(client, port, aiClient, log)
-		log.Info("starting web server", "port", port)
+		server := web.NewServer(clusterManager, port, aiClient, log)
+		log.Info("starting web server", "port", port, "clusters", clusterManager.ClusterCount())
 		if err := server.Start(); err != nil {
 			log.Error("error starting web server", "err", err)
 			os.Exit(1)

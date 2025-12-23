@@ -37,10 +37,11 @@ const (
 	crdListView currentView = iota
 	instanceListView
 	detailView
+	clusterSelectorView
 )
 
 type mainModel struct {
-	client            *k8s.Client
+	clusterManager    *k8s.ClusterManager
 	aiClient          *ai.Client
 	view              currentView
 	err               error
@@ -52,14 +53,19 @@ type mainModel struct {
 	loadingMsg        string
 	analyzing         bool
 	showModal         bool
+	// Cluster selector state
+	clusterNames         []string
+	clusterSelectorIndex int
 }
 
-func newMainModel(client *k8s.Client, aiClient *ai.Client, crdName, kind string) mainModel {
+func newMainModel(manager *k8s.ClusterManager, aiClient *ai.Client, crdName, kind string) mainModel {
+	client := manager.GetCurrentClient()
 	model := mainModel{
-		client:       client,
-		aiClient:     aiClient,
-		view:         crdListView,
-		crdListModel: newCRDListModel(client, nil),
+		clusterManager: manager,
+		aiClient:       aiClient,
+		view:           crdListView,
+		crdListModel:   newCRDListModel(client, nil),
+		clusterNames:   manager.ContextNames(),
 	}
 
 	// If a CRD name or Kind is provided via flags, fetch it and pre-filter crdList view
@@ -146,13 +152,29 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.analyzeSelectedCRD()
 		}
 
+		// Cluster Selector Trigger (only from crdListView)
+		if msg.String() == "c" {
+			if m.view == crdListView && !m.analyzing && !m.showModal {
+				// Find current cluster index
+				currentName := m.clusterManager.GetCurrentContextName()
+				for i, name := range m.clusterNames {
+					if name == currentName {
+						m.clusterSelectorIndex = i
+						break
+					}
+				}
+				m.view = clusterSelectorView
+				return m, nil
+			}
+		}
+
 	case showInstancesMsg:
-		m.instanceListModel = newInstanceListModel(m.client, msg.crd, m.width, m.height)
+		m.instanceListModel = newInstanceListModel(m.clusterManager.GetCurrentClient(), msg.crd, m.width, m.height)
 		cmds = append(cmds, m.instanceListModel.Init())
 		m.view = instanceListView
 
 	case showDetailsMsg:
-		m.detailViewModel = newDetailModel(m.client, msg.crd, msg.instance, m.width, m.height)
+		m.detailViewModel = newDetailModel(m.clusterManager.GetCurrentClient(), msg.crd, msg.instance, m.width, m.height)
 		cmds = append(cmds, m.detailViewModel.Init())
 		m.view = detailView
 
@@ -196,6 +218,34 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.instanceListModel, cmd = m.instanceListModel.Update(msg)
 	case detailView:
 		m.detailViewModel, cmd = m.detailViewModel.Update(msg)
+	case clusterSelectorView:
+		// Handle cluster selector navigation
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			switch keyMsg.String() {
+			case "up", "k":
+				if m.clusterSelectorIndex > 0 {
+					m.clusterSelectorIndex--
+				}
+			case "down", "j":
+				if m.clusterSelectorIndex < len(m.clusterNames)-1 {
+					m.clusterSelectorIndex++
+				}
+			case "enter":
+				// Switch to selected cluster
+				selectedCluster := m.clusterNames[m.clusterSelectorIndex]
+				if err := m.clusterManager.SetCurrentContext(selectedCluster); err == nil {
+					// Reinitialize crdListModel with new client
+					m.crdListModel = newCRDListModel(m.clusterManager.GetCurrentClient(), nil)
+					// Send window size to the new model so it renders correctly
+					m.crdListModel, _ = m.crdListModel.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+					m.view = crdListView
+					return m, m.crdListModel.Init()
+				}
+			case "esc", "q":
+				m.view = crdListView
+				return m, nil
+			}
+		}
 	}
 	cmds = append(cmds, cmd)
 
@@ -211,6 +261,8 @@ func (m mainModel) View() string {
 		baseView = m.instanceListModel.View()
 	case detailView:
 		baseView = m.detailViewModel.View()
+	case clusterSelectorView:
+		baseView = m.renderClusterSelector()
 	default:
 		baseView = "Unknown view"
 	}
@@ -311,7 +363,7 @@ func (m mainModel) analyzeSelectedCRD() tea.Cmd {
 				var schemaJSON string
 				// The model likely only has summary.
 				// We need to fetch the Full CRD.
-				fullCRD, err := m.client.GetFullCRD(context.Background(), selected.Name)
+				fullCRD, err := m.clusterManager.GetCurrentClient().GetFullCRD(context.Background(), selected.Name)
 				if err != nil {
 					return errMsg{err}
 				}
@@ -355,4 +407,44 @@ func (m mainModel) analyzeSelectedCRD() tea.Cmd {
 		}
 		return errMsg{fmt.Errorf("could not get selected CRD")}
 	}
+}
+
+// renderClusterSelector renders the cluster selection view
+func (m mainModel) renderClusterSelector() string {
+	var b strings.Builder
+
+	title := TitleStyle.Render("🔄 Select Cluster")
+	b.WriteString(title)
+	b.WriteString("\n\n")
+
+	currentContext := m.clusterManager.GetCurrentContextName()
+
+	for i, name := range m.clusterNames {
+		cursor := "  "
+		if i == m.clusterSelectorIndex {
+			cursor = "▶ "
+		}
+
+		marker := ""
+		if name == currentContext {
+			marker = " (current)"
+		}
+
+		style := lipgloss.NewStyle()
+		if i == m.clusterSelectorIndex {
+			style = SelectedStyle
+		}
+
+		line := fmt.Sprintf("%s%s%s", cursor, name, marker)
+		b.WriteString(style.Render(line))
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	help := HelpStyle.Render("[↑/↓] Navigate | [Enter] Select | [Esc] Cancel")
+	b.WriteString(help)
+
+	// Center the content
+	content := AppStyle.Render(b.String())
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }

@@ -15,6 +15,7 @@ import { API_BASE_URL } from "@/lib/constants"
 
 interface ResourceGraphProps {
     resourceUid: string
+    cluster?: string
 }
 
 const dagreGraph = new dagre.graphlib.Graph()
@@ -52,7 +53,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "TB") => 
     return { nodes, edges }
 }
 
-export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
+export function ResourceGraph({ resourceUid, cluster }: ResourceGraphProps) {
     const { toast } = useToast()
     const [graphData, setGraphData] = useState<ResourceGraphData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -64,7 +65,16 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
             setIsLoading(true)
             setError(null)
             try {
-                const response = await fetch(`${API_BASE_URL}/api/resource-graph?uid=${resourceUid}`, { cache: "no-store" })
+                // Build headers with cluster selection if provided
+                const headers: Record<string, string> = {}
+                if (cluster) {
+                    headers['X-Cluster-Name'] = cluster
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/resource-graph?uid=${resourceUid}`, {
+                    cache: "no-store",
+                    headers
+                })
                 if (!response.ok) {
                     const errorText = await response.text()
                     throw new Error(`Failed to fetch graph data: ${response.status} ${errorText}`)
@@ -88,7 +98,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
         }
 
         fetchGraphData()
-    }, [resourceUid, toast])
+    }, [resourceUid, cluster, toast])
 
     const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
         if (!graphData) return { nodes: [], edges: [] }
@@ -161,7 +171,7 @@ export function ResourceGraph({ resourceUid }: ResourceGraphProps) {
                 <AlertDescription>
                     {error}
                     <p className="text-xs mt-2">
-                        Ensure your backend has a `/resource-graph?uid=...` endpoint as specified in `BACKEND_API.md`.
+                        Ensure `/resource-graph?uid=...` endpoint is reachable.
                     </p>
                 </AlertDescription>
             </Alert>

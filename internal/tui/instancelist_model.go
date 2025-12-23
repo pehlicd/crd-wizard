@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -82,6 +84,8 @@ type instanceListModel struct {
 	schemaRoot      []*schemaNode // The full tree
 	flattenedSchema []*schemaNode // The visible nodes for rendering and navigation
 	schemaCursor    int           // The cursor position in the flattenedSchema
+	keys            KeyMap
+	help            help.Model
 }
 
 func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int) instanceListModel {
@@ -123,6 +127,8 @@ func newInstanceListModel(client *k8s.Client, crd models.CRD, width, height int)
 		width:     width,
 		height:    height,
 		activeTab: schemaTab,
+		keys:      DefaultKeyMap(),
+		help:      help.New(),
 	}
 }
 
@@ -152,6 +158,7 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.help.Width = msg.Width
 		m.recalculateLayout()
 		viewportNeedsUpdate = true
 
@@ -177,7 +184,7 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				viewportNeedsUpdate = true
 			}
 		} else if m.activeTab == instancesTab && !m.loading {
-			if msg.String() == "enter" {
+			if key.Matches(msg, m.keys.Enter) {
 				if m.table.Cursor() < len(m.instances) {
 					selected := m.instances[m.table.Cursor()]
 					return m, func() tea.Msg { return showDetailsMsg{crd: m.crd, instance: selected} }
@@ -185,18 +192,20 @@ func (m instanceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		switch msg.String() {
-		case "q", "ctrl+c":
+		if key.Matches(msg, m.keys.Quit) {
 			return m, tea.Quit
-		case "b", "esc":
+		} else if key.Matches(msg, m.keys.Back) {
 			return m, func() tea.Msg { return goBackMsg{} }
-		case "tab", "right", "left", "shift+tab":
+		} else if key.Matches(msg, m.keys.Tab, m.keys.Right, m.keys.Left, m.keys.ShiftTab) {
 			m.activeTab = (m.activeTab + 1) % 2
 			if m.activeTab == instancesTab {
 				m.table.Focus()
 			} else {
 				m.table.Blur()
 			}
+			viewportNeedsUpdate = true
+		} else if key.Matches(msg, m.keys.Help) {
+			m.help.ShowAll = !m.help.ShowAll
 			viewportNeedsUpdate = true
 		}
 	}
@@ -249,10 +258,10 @@ func (m instanceListModel) View() string {
 		}
 	}
 
-	help := "[←/→] Switch Tab | [↑/↓] Navigate | [Enter] Expand/Select | [b] Back | [q] Quit"
+	helpView := HelpStyle.Render(m.help.View(m.keys))
 	viewContent := lipgloss.JoinVertical(lipgloss.Left, title, tabs, tabContent)
 
-	return AppStyle.Render(viewContent + "\n" + HelpStyle.Render(help))
+	return AppStyle.Render(viewContent + "\n" + helpView)
 }
 
 // Centralized function to handle all sizing and layout calculations.

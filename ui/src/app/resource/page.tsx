@@ -40,6 +40,7 @@ function CrDetailView() {
   const crdName = searchParams.get('crdName');
   const namespace = searchParams.get('namespace');
   const crName = searchParams.get('crName');
+  const cluster = searchParams.get('cluster');
 
   const { toast } = useToast();
 
@@ -56,12 +57,18 @@ function CrDetailView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        // Build headers with cluster selection if provided
+        const headers: Record<string, string> = {};
+        if (cluster) {
+          headers['X-Cluster-Name'] = cluster;
+        }
+
         let fetchUrl = `${API_BASE_URL}/api/cr?crdName=${crdName}&name=${crName}`;
         if (namespace) {
           fetchUrl += `&namespace=${namespace}`;
         }
 
-        const crResponse = await fetch(fetchUrl, { cache: 'no-store' });
+        const crResponse = await fetch(fetchUrl, { cache: 'no-store', headers });
 
         if (!crResponse.ok) {
           const errorText = await crResponse.text();
@@ -75,7 +82,7 @@ function CrDetailView() {
           setCr(crWithId);
 
           if (crWithId.metadata.uid) {
-            const eventsResponse = await fetch(`${API_BASE_URL}/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store' });
+            const eventsResponse = await fetch(`${API_BASE_URL}/api/events?resourceUid=${crWithId.metadata.uid}`, { cache: 'no-store', headers });
             if (!eventsResponse.ok) {
               const errorText = await eventsResponse.text();
               throw new Error(`Failed to fetch Events: ${eventsResponse.status} ${errorText}`);
@@ -104,7 +111,7 @@ function CrDetailView() {
     };
 
     fetchData();
-  }, [crdName, namespace, crName, toast]);
+  }, [crdName, namespace, crName, cluster, toast]);
 
   const syntaxHighlighterStyle = useMemo(() => {
     return resolvedTheme === 'dark' ? oneDark : oneLight;
@@ -145,7 +152,7 @@ function CrDetailView() {
         <div className="text-center p-4">
           <h2 className="text-2xl font-bold text-destructive mb-2">Resource Not Found</h2>
           <p className="text-muted-foreground mb-4">The resource you are looking for could not be found.</p>
-          <Link href={`/instances?crdName=${crdName}`}>
+          <Link href={`/instances?crdName=${crdName}${cluster ? `&cluster=${cluster}` : ''}`}>
             <Button variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" /> Go back to Instances Overview
             </Button>
@@ -161,7 +168,7 @@ function CrDetailView() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <Link href={`/instances?crdName=${crdName}`} passHref>
+            <Link href={`/instances?crdName=${crdName}${cluster ? `&cluster=${cluster}` : ''}`} passHref>
               <Button variant="outline" size="icon" className="hover:bg-primary/10 transition-colors">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -246,76 +253,76 @@ function CrDetailView() {
           </Card>
         </div>
 
-      <Tabs defaultValue="definition" className="w-full">
-        <TabsList>
-          <TabsTrigger value="definition"><FileJson className="mr-2 h-4 w-4" /> Raw Definition</TabsTrigger>
-          <TabsTrigger value="events"><History className="mr-2 h-4 w-4" /> Events</TabsTrigger>
-          <TabsTrigger value="graph"><Share2 className="mr-2 h-4 w-4" /> Relationship Graph</TabsTrigger>
-        </TabsList>
-        <TabsContent value="definition">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Raw Definition</CardTitle>
-                <CardDescription>The full definition of the resource instance.</CardDescription>
-              </div>
-              <ToggleGroup variant="outline" type="single" defaultValue="yaml" value={format} onValueChange={(value: string) => { if (value) setFormat(value as 'yaml' | 'json') }}>
-                <ToggleGroupItem value="yaml" aria-label="Toggle YAML">YAML</ToggleGroupItem>
-                <ToggleGroupItem value="json" aria-label="Toggle JSON">JSON</ToggleGroupItem>
-              </ToggleGroup>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] bg-muted rounded-md text-xs">
-                <SyntaxHighlighter
-                  language={format}
-                  style={syntaxHighlighterStyle}
-                  customStyle={{
-                    margin: 0,
-                    padding: '1rem',
-                  }}
-                  showLineNumbers
-                >
-                  {format === 'json' ? jsonString : yamlString}
-                </SyntaxHighlighter>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="events">
-          <Card>
-            <CardHeader>
-              <CardTitle>Events</CardTitle>
-              <CardDescription>Kubernetes events specific to this resource instance.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-4">
-                  {events.length > 0 ? events.map(event => (
-                    <div key={event.id} className="flex items-start gap-4 text-sm">
-                      <Badge variant={event.type === 'Warning' ? 'destructive' : 'outline'} className="mt-1">{event.type}</Badge>
-                      <div className="flex-1">
-                        <p className="font-medium">{event.reason}: <span className="text-muted-foreground">{event.involvedObject.kind}/{event.involvedObject.name}</span></p>
-                        <p className="text-xs text-muted-foreground">{event.message}</p>
-                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.lastTimestamp), { addSuffix: true })}</p>
-                      </div>
-                    </div>
-                  )) : <p className="text-center text-muted-foreground py-10">No events found for this resource.</p>}
+        <Tabs defaultValue="definition" className="w-full">
+          <TabsList>
+            <TabsTrigger value="definition"><FileJson className="mr-2 h-4 w-4" /> Raw Definition</TabsTrigger>
+            <TabsTrigger value="events"><History className="mr-2 h-4 w-4" /> Events</TabsTrigger>
+            <TabsTrigger value="graph"><Share2 className="mr-2 h-4 w-4" /> Relationship Graph</TabsTrigger>
+          </TabsList>
+          <TabsContent value="definition">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Raw Definition</CardTitle>
+                  <CardDescription>The full definition of the resource instance.</CardDescription>
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="graph">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resource Relationship Graph</CardTitle>
-              <CardDescription>Visual representation of related resources.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResourceGraph resourceUid={cr.metadata.uid} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <ToggleGroup variant="outline" type="single" defaultValue="yaml" value={format} onValueChange={(value: string) => { if (value) setFormat(value as 'yaml' | 'json') }}>
+                  <ToggleGroupItem value="yaml" aria-label="Toggle YAML">YAML</ToggleGroupItem>
+                  <ToggleGroupItem value="json" aria-label="Toggle JSON">JSON</ToggleGroupItem>
+                </ToggleGroup>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px] bg-muted rounded-md text-xs">
+                  <SyntaxHighlighter
+                    language={format}
+                    style={syntaxHighlighterStyle}
+                    customStyle={{
+                      margin: 0,
+                      padding: '1rem',
+                    }}
+                    showLineNumbers
+                  >
+                    {format === 'json' ? jsonString : yamlString}
+                  </SyntaxHighlighter>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="events">
+            <Card>
+              <CardHeader>
+                <CardTitle>Events</CardTitle>
+                <CardDescription>Kubernetes events specific to this resource instance.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-4">
+                    {events.length > 0 ? events.map(event => (
+                      <div key={event.id} className="flex items-start gap-4 text-sm">
+                        <Badge variant={event.type === 'Warning' ? 'destructive' : 'outline'} className="mt-1">{event.type}</Badge>
+                        <div className="flex-1">
+                          <p className="font-medium">{event.reason}: <span className="text-muted-foreground">{event.involvedObject.kind}/{event.involvedObject.name}</span></p>
+                          <p className="text-xs text-muted-foreground">{event.message}</p>
+                          <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.lastTimestamp), { addSuffix: true })}</p>
+                        </div>
+                      </div>
+                    )) : <p className="text-center text-muted-foreground py-10">No events found for this resource.</p>}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="graph">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resource Relationship Graph</CardTitle>
+                <CardDescription>Visual representation of related resources.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResourceGraph resourceUid={cr.metadata.uid} cluster={cluster || undefined} />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </div>

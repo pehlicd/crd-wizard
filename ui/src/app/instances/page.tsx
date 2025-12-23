@@ -32,6 +32,7 @@ const getStatusBadge = (cr: CustomResource) => {
 function InstancesView() {
   const searchParams = useSearchParams();
   const crdName = searchParams.get('crdName');
+  const cluster = searchParams.get('cluster');
   const { toast } = useToast();
 
   const [crs, setCrs] = useState<CustomResource[]>([]);
@@ -43,7 +44,16 @@ function InstancesView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const crsResponse = await fetch(`${API_BASE_URL}/api/crs?crdName=${crdName}`, { cache: 'no-store' });
+        // Build headers with cluster selection if provided
+        const headers: Record<string, string> = {};
+        if (cluster) {
+          headers['X-Cluster-Name'] = cluster;
+        }
+
+        const crsResponse = await fetch(`${API_BASE_URL}/api/crs?crdName=${crdName}`, {
+          cache: 'no-store',
+          headers
+        });
 
         if (!crsResponse.ok) {
           const errorText = await crsResponse.text();
@@ -70,7 +80,7 @@ function InstancesView() {
     };
 
     fetchData();
-  }, [crdName, toast]);
+  }, [crdName, cluster, toast]);
 
 
   if (isLoading) {
@@ -165,75 +175,75 @@ function InstancesView() {
               </CardTitle>
               <CardDescription>Manage and explore each custom resource instance. Click 'Details' for comprehensive information.</CardDescription>
             </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Namespace</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Message</TableHead>
-                    <TableHead className="text-right"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {crs.length > 0 ? crs.map(cr => (
-                    <TableRow key={cr.id}>
-                      <TableCell className="font-medium">
-                        {cr.metadata.name}
-                      </TableCell>
-                      <TableCell>{cr.metadata.namespace || 'cluster'}</TableCell>
-                      <TableCell>{getStatusBadge(cr)}</TableCell>
-                      <TableCell>{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{cr.status?.conditions?.[0]?.message || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/resource?crdName=${crdName}&namespace=${cr.metadata.namespace || '_cluster'}&crName=${cr.metadata.name}`}
-                          passHref
-                        >
-                          <Button variant="outline" size="sm">
-                            <Info className="mr-2 h-4 w-4" />
-                            Details
-                          </Button>
-                        </Link>
-                      </TableCell>
+            <CardContent>
+              <ScrollArea className="h-[300px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Namespace</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Message</TableHead>
+                      <TableHead className="text-right"></TableHead>
                     </TableRow>
-                  )) : (
-                    <TableRow><TableCell colSpan={6} className="h-24 text-center">No instances found.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {crs.length > 0 ? crs.map(cr => (
+                      <TableRow key={cr.id}>
+                        <TableCell className="font-medium">
+                          {cr.metadata.name}
+                        </TableCell>
+                        <TableCell>{cr.metadata.namespace || 'cluster'}</TableCell>
+                        <TableCell>{getStatusBadge(cr)}</TableCell>
+                        <TableCell>{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{cr.status?.conditions?.[0]?.message || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          <Link
+                            href={`/resource?crdName=${crdName}&namespace=${cr.metadata.namespace || '_cluster'}&crName=${cr.metadata.name}${cluster ? `&cluster=${cluster}` : ''}`}
+                            passHref
+                          >
+                            <Button variant="outline" size="sm">
+                              <Info className="mr-2 h-4 w-4" />
+                              Details
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow><TableCell colSpan={6} className="h-24 text-center">No instances found.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Instance Age</CardTitle>
-            <CardDescription>List of instances sorted by creation time.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Age</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {crs.length > 0 ? [...crs].sort((a, b) => new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()).map(cr => (
-                    <TableRow key={cr.id}>
-                      <TableCell className="font-medium">{cr.metadata.name}</TableCell>
-                      <TableCell>{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</TableCell>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Instance Age</CardTitle>
+              <CardDescription>List of instances sorted by creation time.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Age</TableHead>
                     </TableRow>
-                  )) : <TableRow><TableCell colSpan={2} className="h-24 text-center">No instances found.</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
+                  </TableHeader>
+                  <TableBody>
+                    {crs.length > 0 ? [...crs].sort((a, b) => new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()).map(cr => (
+                      <TableRow key={cr.id}>
+                        <TableCell className="font-medium">{cr.metadata.name}</TableCell>
+                        <TableCell>{formatDistanceToNow(new Date(cr.metadata.creationTimestamp), { addSuffix: true })}</TableCell>
+                      </TableRow>
+                    )) : <TableRow><TableCell colSpan={2} className="h-24 text-center">No instances found.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
           </Card>
 
           <Card className="bg-card/80 backdrop-blur-sm border-border/50">

@@ -24,8 +24,8 @@ import (
 )
 
 // Start initializes and runs the TUI program.
-func Start(client *k8s.Client, aiClient *ai.Client, crdName, kind string) error {
-	p := tea.NewProgram(newMainModel(client, aiClient, crdName, kind), tea.WithAltScreen())
+func Start(manager *k8s.ClusterManager, aiClient *ai.Client, crdName, kind string) error {
+	p := tea.NewProgram(newMainModel(manager, aiClient, crdName, kind), tea.WithAltScreen())
 	_, err := p.Run()
 	return err
 }

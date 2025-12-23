@@ -22,6 +22,8 @@
 !ui/tailwind.config.ts
 !ui/tsconfig.json
 
+!deploy/**
+
 !charts/**
 !index.yaml
 !*.tgz

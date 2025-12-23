@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { ClusterInfo, CRD } from '@/lib/crd-data';
-import { API_BASE_URL } from '@/lib/constants';
+import type { CRD } from '@/lib/crd-data';
 import CrdList from '@/components/crd-list';
 import CrdDetail from '@/components/crd-detail';
-import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 import { Logo } from "@/components/ui/logo";
@@ -14,66 +12,32 @@ import { IoMdInformationCircleOutline, IoMdRefresh } from 'react-icons/io';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { SiKubernetes } from "react-icons/si";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCrdContext } from '@/contexts/crd-context';
 
 export default function Home() {
-  const [allCrds, setAllCrds] = useState<CRD[]>([]);
-  const [clusterInfo, setClusterInfo] = useState<ClusterInfo | null>(null);
+  const {
+    clusters,
+    selectedCluster,
+    allCrds,
+    clusterInfo,
+    isLoading,
+    selectCluster,
+    refreshCrds
+  } = useCrdContext();
+
   const [selectedCrd, setSelectedCrd] = useState<CRD | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
-  async function fetchCrds() {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/crds`, { cache: 'no-store' });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch CRDs from server: ${response.status} ${errorText}`);
-      }
-      const data = await response.json();
-      const crdsWithId: CRD[] = (data || []).map((crd: any) => ({
-        ...crd,
-        id: crd.metadata.name,
-      }));
-      setAllCrds(crdsWithId);
-    } catch (error: any) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error fetching data",
-        description: error.message || "Could not load CRDs. Please ensure the backend is running and reachable.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function fetchClusterInfo() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/cluster-info`, { cache: 'no-store' });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch cluster info from server: ${response.status} ${errorText}`);
-      }
-      const data = await response.json();
-      setClusterInfo(data || null);
-    } catch (error: any) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error fetching cluster info",
-        description: error.message || "Could not load cluster info. Please ensure the backend is running and reachable.",
-      });
-      setClusterInfo(null);
-    }
-  }
-
+  // Clear selection when cluster changes
   useEffect(() => {
-    fetchCrds();
-    fetchClusterInfo();
-  }, [toast]);
+    setSelectedCrd(null);
+  }, [selectedCluster]);
+
+  const handleClusterChange = (clusterName: string) => {
+    selectCluster(clusterName);
+  };
 
   const handleCrdSelect = (crd: CRD) => {
     setSelectedCrd(crd);
@@ -95,63 +59,92 @@ export default function Home() {
         "md:flex shadow-md overflow-hidden",
         mobileView === 'list' ? 'flex' : 'hidden'
       )}>
-        <header className="flex-shrink-0 p-4 border-b border-border/50 flex items-center gap-3 bg-card/50 backdrop-blur-md">
-          <div className="p-2 bg-primary/10 rounded-xl">
-            <Logo className="w-8 h-8 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold font-headline text-foreground">CRD Wizard</h1>
-            <p className="text-xs text-muted-foreground">Kubernetes Resource Explorer</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10 transition-colors">
-                  <IoMdInformationCircleOutline className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="center" className="w-72 p-4 animate-fade-in">
-                <div className="space-y-3">
-                  {clusterInfo ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <SiKubernetes className="w-5 h-5 text-primary" />
-                        Cluster Information
-                      </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p><strong>Cluster:</strong> {clusterInfo.clusterName}</p>
-                        <p><strong>Version:</strong> {clusterInfo.serverVersion}</p>
-                        <div className="flex items-center gap-2">
-                          <strong>CRDs:</strong>
-                          <Badge variant="secondary" className="text-xs">
-                            {clusterInfo.numCRDs} resources
-                          </Badge>
+        <header className="flex-shrink-0 border-b border-border/50 bg-card/50 backdrop-blur-md">
+          {/* Top row: Logo, Title, and Action Buttons */}
+          <div className="p-3 flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl shrink-0">
+              <Logo className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold font-headline text-foreground truncate">CRD Wizard</h1>
+              <p className="text-[10px] text-muted-foreground hidden sm:block">Kubernetes Resource Explorer</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 transition-colors">
+                    <IoMdInformationCircleOutline className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-72 p-4 animate-fade-in">
+                  <div className="space-y-3">
+                    {clusterInfo ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <SiKubernetes className="w-5 h-5 text-primary" />
+                          Cluster Information
+                        </div>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p><strong>Cluster:</strong> {clusterInfo.clusterName}</p>
+                          <p><strong>Version:</strong> {clusterInfo.serverVersion}</p>
+                          <div className="flex items-center gap-2">
+                            <strong>CRDs:</strong>
+                            <Badge variant="secondary" className="text-xs">
+                              {clusterInfo.numCRDs} resources
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Unable to fetch cluster information</p>
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={fetchCrds} 
-              disabled={isLoading} 
-              className="hover:bg-primary/10 transition-colors"
-              title="Refresh"
-            >
-              <IoMdRefresh className={cn(
-                "h-4 w-4 transition-all duration-300", 
-                isLoading ? "animate-spin" : "hover:rotate-90"
-              )} />
-            </Button>
-            <ThemeToggle />
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Unable to fetch cluster information</p>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refreshCrds()}
+                disabled={isLoading}
+                className="h-8 w-8 hover:bg-primary/10 transition-colors"
+                title="Refresh"
+              >
+                <IoMdRefresh className={cn(
+                  "h-4 w-4 transition-all duration-300",
+                  isLoading ? "animate-spin" : "hover:rotate-90"
+                )} />
+              </Button>
+              <ThemeToggle />
+            </div>
           </div>
+
+          {/* Cluster Selector Row (only when multiple clusters) */}
+          {clusters.length > 1 && (
+            <div className="px-3 pb-3">
+              <Select value={selectedCluster} onValueChange={handleClusterChange}>
+                <SelectTrigger className="w-full h-9 text-sm border-border/50 bg-background/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <SiKubernetes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate"><SelectValue placeholder="Select cluster" /></span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {clusters.map((cluster) => (
+                    <SelectItem key={cluster.name} value={cluster.name} className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{cluster.name}</span>
+                        {cluster.isCurrent && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1">default</Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </header>
         <div className="flex-1 min-h-0">
           <CrdList
@@ -169,7 +162,7 @@ export default function Home() {
         "md:block relative",
         mobileView === 'detail' ? 'block' : 'hidden'
       )}>
-        <CrdDetail crd={selectedCrd} onBack={handleBack} />
+        <CrdDetail crd={selectedCrd} onBack={handleBack} selectedCluster={selectedCluster} />
       </main>
     </div>
   );

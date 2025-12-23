@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -44,6 +46,8 @@ type crdListModel struct {
 	width, height int
 	infoVisible   bool
 	clusterInfo   models.ClusterInfo
+	keys          KeyMap
+	help          help.Model
 }
 
 func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
@@ -82,6 +86,8 @@ func newCRDListModel(client *k8s.Client, targetCRDs []models.CRD) crdListModel {
 		loading:      true,
 		filteredCRDs: targetCRDs,
 		infoVisible:  false,
+		keys:         DefaultKeyMap(),
+		help:         help.New(),
 	}
 }
 
@@ -103,6 +109,8 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.help.Width = msg.Width
+
 		appHorizontalMargin, appVerticalMargin := AppStyle.GetHorizontalFrameSize(), AppStyle.GetVerticalFrameSize()
 
 		headerHeight := 1
@@ -145,35 +153,32 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		if m.infoVisible {
-			switch msg.String() {
-			case "q", "esc", "i":
+			if key.Matches(msg, m.keys.Quit, m.keys.Back, m.keys.Info) {
 				m.infoVisible = false
 			}
 			return m, nil
 		}
 		if m.filtering {
-			switch msg.String() {
-			case "enter", "esc":
+			if key.Matches(msg, m.keys.Enter, m.keys.Cancel) {
 				m.filtering = false
-			default:
+			} else {
 				m.textInput, cmd = m.textInput.Update(msg)
 				m.filterTable()
 			}
 			return m, cmd
 		}
 
-		switch msg.String() {
-		case "q", "ctrl+c":
+		if key.Matches(msg, m.keys.Quit) {
 			return m, tea.Quit
-		case "/":
+		} else if key.Matches(msg, m.keys.Filter) {
 			m.filtering = true
 			return m, nil
-		case "enter":
+		} else if key.Matches(msg, m.keys.Enter) {
 			if m.table.Cursor() < len(m.filteredCRDs) {
 				selectedCRD := m.filteredCRDs[m.table.Cursor()]
 				return m, func() tea.Msg { return showInstancesMsg{crd: selectedCRD} }
 			}
-		case "r", "R":
+		} else if key.Matches(msg, m.keys.Refresh) {
 			m.loading = true
 			m.err = nil
 			return m, func() tea.Msg {
@@ -183,7 +188,7 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return crdsLoadedMsg{crds}
 			}
-		case "i", "I":
+		} else if key.Matches(msg, m.keys.Info) {
 			return m, func() tea.Msg {
 				clusterInfo, err := m.client.GetClusterInfo()
 				if err != nil {
@@ -191,6 +196,8 @@ func (m crdListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return showInfoMsg{clusterInfo}
 			}
+		} else if key.Matches(msg, m.keys.Help) {
+			m.help.ShowAll = !m.help.ShowAll
 		}
 	}
 
@@ -269,23 +276,25 @@ func (m crdListModel) View() string {
 	}
 
 	var viewContent string
-	var help string
+	var helpView string
 	titlestyle := TitleStyle.PaddingBottom(1)
 
 	if m.filtering {
-		help = "[Enter/Esc] Confirm/Cancel | [↑/↓] Navigate | [r] Refresh | [i] Info | [q] Quit"
+		// Temporary help keys for filtering mode
+		// We could define a separate keymap for this mode or just show relevant keys
+		helpView = HelpStyle.Render("[Enter/Esc] Confirm/Cancel")
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("️🧙 CRD Wizard"),
 			m.textInput.View(),
 			m.table.View(),
 		)
 	} else {
-		help = "[↑/↓] Navigate | [Enter] Select | [a] Analyze | [/] Filter | [r] Refresh | [i] Info | [q] Quit"
+		helpView = HelpStyle.Render(m.help.View(m.keys))
 		viewContent = lipgloss.JoinVertical(lipgloss.Left,
 			titlestyle.Render("🧙 CRD Wizard - CRD Selector"),
 			m.table.View(),
 		)
 	}
 
-	return AppStyle.Render(viewContent + "\n" + HelpStyle.Render(help))
+	return AppStyle.Render(viewContent + "\n" + helpView)
 }

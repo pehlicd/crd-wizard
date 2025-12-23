@@ -32,6 +32,11 @@ export interface ClusterInfo {
   numCRDs: number;
 }
 
+export interface ClusterEntry {
+  name: string;
+  isCurrent: boolean;
+}
+
 export interface CustomResource {
   id: string;
   apiVersion: string;
