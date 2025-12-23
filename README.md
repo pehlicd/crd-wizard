@@ -141,6 +141,40 @@ plugins:
       - "crd-wizard tui --kind $COL-KIND"
 ```
 
+## Documentation Generator
+
+CR(D) Wizard includes a powerful documentation generator that can convert your CRDs into beautiful, readable HTML or Markdown files.
+
+### Features
+
+-   **Live Preview**: Real-time preview of your documentation as you edit or upload CRDs.
+-   **Multiple Inputs**: Support for raw YAML/JSON, file uploads, and direct **Git Provider URLs** (GitHub/GitLab).
+-   **Export Formats**: Export as standalone HTML pages or Markdown (ideal for READMEs).
+-   **Batch Export**: Export documentation for **all** CRDs in your cluster at once as a ZIP archive.
+
+### Usage
+
+1.  Navigate to the **Generator** page in the Web UI.
+2.  **Input**:
+    -   Paste raw CRD content.
+    -   Upload a file.
+    -   Or paste a **Git URL** (e.g., `https://github.com/prometheus-operator/.../alertmanager.yaml`).
+3.  **Preview**: Instantly see how the documentation looks.
+4.  **Export**: Click "Download" to save the file.
+5.  **Batch Export**: On the main CRD list page, click the "Export All" button in the toolbar to download a ZIP of all CRDs.
+
+### CLI Usage
+
+You can also generate documentation directly from the CLI:
+
+```shell
+# From a local file
+crd-wizard generate -f path/to/crd.yaml
+
+# From a Git URL
+crd-wizard generate --url https://github.com/user/repo/blob/main/crd.yaml
+```
+
 ## AI Capabilities
 
 CR(D) Wizard integrates with LLMs to provide intelligent documentation and explanations for your CRDs.

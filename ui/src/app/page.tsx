@@ -14,6 +14,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { SiKubernetes } from "react-icons/si";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCrdContext } from '@/contexts/crd-context';
+import Link from 'next/link';
+import { IoMdDocument } from "react-icons/io";
 
 export default function Home() {
   const {
@@ -116,6 +118,11 @@ export default function Home() {
                   isLoading ? "animate-spin" : "hover:rotate-90"
                 )} />
               </Button>
+              <Link href="/generator">
+                <Button variant="ghost" size="icon" title="Documentation Generator" className="h-8 w-8 hover:bg-primary/10 transition-colors">
+                  <IoMdDocument className="h-4 w-4" />
+                </Button>
+              </Link>
               <ThemeToggle />
             </div>
           </div>
