@@ -171,6 +171,21 @@ An overlay will appear showing the AI-generated analysis of the CRD schema.
 #### Web Interface
 When AI is enabled, the web interface exposes AI features (via `/crd/generate-context` endpoint) to provide insights directly in the dashboard.
 
+## Multi-Cluster Support
+
+CR(D) Wizard supports managing CRDs across multiple Kubernetes clusters seamlessly. It automatically discovers all contexts defined in your `kubeconfig` file.
+
+### Features
+
+- **Auto-Discovery**: Automatically loads all valid contexts from `~/.kube/config`.
+- **Context Switching**: Switch between clusters instantly without restarting the application.
+- **Unified Interface**: Available in both the Web UI and TUI.
+
+### Usage
+
+- **Web UI**: Use the cluster selector dropdown in the top navigation bar to switch contexts. The selection persists across sessions.
+- **TUI**: Press **`c`** to open the cluster selection dialog and switch contexts instantly.
+
 ## How to contribute
 
 If you'd like to contribute to CR(D) Wizard, feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/pehlicd/crd-wizard). Your feedback and contributions are highly appreciated!
