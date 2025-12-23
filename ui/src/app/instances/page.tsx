@@ -85,21 +85,23 @@ function InstancesView() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10" />
-          <Skeleton className="h-9 w-64" />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-9 w-64" />
+          </div>
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full" />
         </div>
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-[400px] w-full" />
-        <Skeleton className="h-[400px] w-full" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 animate-fade-in">
+      <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
@@ -283,7 +285,19 @@ function InstancesView() {
 
 export default function CrdInstancesPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-9 w-64" />
+          </div>
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
+      </div>
+    }>
       <InstancesView />
     </Suspense>
   );
