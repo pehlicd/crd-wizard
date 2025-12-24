@@ -1,5 +1,5 @@
 <div align="center" style="padding-top: 20px">
-    <img src="/ui/src/public/logo.svg?raw=true" width="120" style="background-color: blue; border-radius: 50%;">
+    <img src="/ui/src/public/logo.svg?raw=true" width="120">
 </div>
 
 
