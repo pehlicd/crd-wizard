@@ -444,20 +444,22 @@ const HTMLTemplate = `
             
             if (match) {
                 row.classList.remove('hidden');
-                // Walk up the DOM to reveal parents
-                let parent = row.parentElement;
-                while (parent && parent.classList.contains('nested-fields')) {
-                    parent.style.display = 'block'; // Expand parent container
+                
+                // Recursively expand all parent nested-fields containers
+                let parent = row.closest('.nested-fields');
+                while (parent) {
+                    parent.style.display = 'block';
                     parent.classList.remove('hidden');
                     
-                    // Find the row responsible for this nested group and show it
-                    const parentTogglerRow = parent.previousElementSibling;
-                    if(parentTogglerRow) {
-                        parentTogglerRow.classList.remove('hidden');
-                        const toggleBtn = parentTogglerRow.querySelector('.toggle');
-                        if(toggleBtn) toggleBtn.classList.add('expanded');
+                    const togglerRow = parent.previousElementSibling;
+                    if (togglerRow && togglerRow.classList.contains('field-row')) {
+                        togglerRow.classList.remove('hidden');
+                        const toggleBtn = togglerRow.querySelector('.toggle');
+                        if (toggleBtn) toggleBtn.classList.add('expanded');
                     }
-                    parent = parent.parentElement; // Continue up
+                    
+                    // Move up to the next level
+                    parent = parent.parentElement ? parent.parentElement.closest('.nested-fields') : null;
                 }
             } else {
                 row.classList.add('hidden');
