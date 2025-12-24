@@ -46,10 +46,12 @@ const MarkdownTemplate = `
 > {{ .Description }}
 {{ end }}
 
+{{ if or .Default .Enum }}
 | Attribute | Value |
 | :--- | :--- |
 {{ if .Default }}| **Default** | <code>{{ .Default }}</code> |{{ end }}
 {{ if .Enum }}| **Enum** | {{ range .Enum }}<code>{{ . }}</code> {{ end }} |{{ end }}
+{{ end }}
 
 {{ if .Fields }}
 **Nested Fields:**
@@ -86,6 +88,22 @@ const HTMLTemplate = `
             --type-bool: #d97706;
             --type-object: #7c3aed;
             --type-array: #db2777;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary: #60a5fa;
+            --primary-bg: #1e3a8a;
+
+            --type-string: #4ade80;
+            --type-int: #38bdf8;
+            --type-bool: #fbbf24;
+            --type-object: #a78bfa;
+            --type-array: #f472b6;
         }
 
         * { box-sizing: border-box; }
@@ -313,6 +331,21 @@ const HTMLTemplate = `
         }
         
         .hidden { display: none !important; }
+
+        /* Dark Mode Overrides */
+        [data-theme="dark"] .field-content:hover { background-color: #334155; }
+        [data-theme="dark"] .field-type { background: #334155; color: #cbd5e1; }
+        
+        [data-theme="dark"] .type-string { background: rgba(74, 222, 128, 0.1); }
+        [data-theme="dark"] .type-integer { background: rgba(56, 189, 248, 0.1); }
+        [data-theme="dark"] .type-boolean { background: rgba(251, 191, 36, 0.1); }
+        [data-theme="dark"] .type-object { background: rgba(167, 139, 250, 0.1); }
+        [data-theme="dark"] .type-array { background: rgba(244, 114, 182, 0.1); }
+        
+        [data-theme="dark"] .controls { background: rgba(15, 23, 42, 0.95); }
+        [data-theme="dark"] button { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+        [data-theme="dark"] button:hover { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
+        [data-theme="dark"] #search-input { background: #1e293b; color: white; border-color: #475569; }
     </style>
 </head>
 <body>
@@ -343,6 +376,7 @@ const HTMLTemplate = `
         <div class="btn-group">
             <button onclick="toggleAll(true)">Expand All</button>
             <button onclick="toggleAll(false)">Collapse All</button>
+            <button onclick="toggleTheme()">Theme</button>
         </div>
         <input type="text" id="search-input" placeholder="Search fields..." onkeyup="filterFields()">
     </div>
@@ -353,6 +387,22 @@ const HTMLTemplate = `
 </div>
 
 <script>
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+    
+    // Init theme
+    (function() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+    })();
+
     function toggleRow(btn) {
         const row = btn.closest('.field-row');
         const nested = row.nextElementSibling; // The .nested-fields div

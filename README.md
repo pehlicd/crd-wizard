@@ -173,6 +173,12 @@ crd-wizard generate -f path/to/crd.yaml
 
 # From a Git URL
 crd-wizard generate --url https://github.com/user/repo/blob/main/crd.yaml
+
+# Export a single CRD from the cluster
+crd-wizard export alertmanagers.monitoring.coreos.com
+
+# Export all CRDs to Markdown
+crd-wizard export --all --format md --output ./docs/
 ```
 
 ## AI Capabilities
