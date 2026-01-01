@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -27,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -327,9 +329,6 @@ func getGVRFromCRD(crd apiextensionsv1.CustomResourceDefinition) (schema.GroupVe
 
 // DryRun performs a server-side dry-run of the provided YAML manifest to validate it against the cluster.
 func (c *Client) DryRun(ctx context.Context, manifest string) error {
-	// 1. Unmarshal YAML into Unstructured.
-	// We use k8s.io/apimachinery/pkg/util/yaml because it handles generic YAML-to-JSON
-	// conversion better than yaml.v2 for the Unstructured type.
 	dec := k8syaml.NewYAMLOrJSONDecoder(strings.NewReader(manifest), 4096)
 	obj := &unstructured.Unstructured{}
 	if err := dec.Decode(obj); err != nil {
@@ -341,7 +340,6 @@ func (c *Client) DryRun(ctx context.Context, manifest string) error {
 		return fmt.Errorf("manifest is missing apiVersion or kind")
 	}
 
-	// 2. Discover the API Resource (GVR)
 	apiResource, err := c.findAPIResource(gvk.Group, gvk.Version, gvk.Kind)
 	if err != nil {
 		return fmt.Errorf("could not resolve resource for %s: %w", gvk, err)
@@ -353,23 +351,25 @@ func (c *Client) DryRun(ctx context.Context, manifest string) error {
 		Resource: apiResource.Name,
 	}
 
-	// 3. Prepare Dynamic Request
 	var resourceClient dynamic.ResourceInterface
 	if apiResource.Namespaced {
 		ns := obj.GetNamespace()
 		if ns == "" {
-			ns = "default" // default namespace if none provided
+			ns = "default"
 		}
 		resourceClient = c.DynamicClient.Resource(gvr).Namespace(ns)
 	} else {
 		resourceClient = c.DynamicClient.Resource(gvr)
 	}
 
-	// 4. Execute Create with DryRun option
 	_, err = resourceClient.Create(ctx, obj, metav1.CreateOptions{
-		DryRun: []string{metav1.DryRunAll},
+		DryRun:          []string{metav1.DryRunAll},
+		FieldValidation: "Strict",
 	})
 	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			return nil
+		}
 		return fmt.Errorf("dry-run failed: %w", err)
 	}
 
@@ -439,13 +439,7 @@ func (c *Client) findAPIResource(group, version, kind string) (*metav1.APIResour
 			for _, resource := range resourceList.APIResources {
 				// We match on Kind and ensure the resource supports the "list" and "get" verbs.
 				if resource.Kind == kind {
-					hasList := false
-					for _, verb := range resource.Verbs {
-						if verb == "list" {
-							hasList = true
-							break
-						}
-					}
+					hasList := slices.Contains(resource.Verbs, "list")
 					if hasList {
 						return &resource, nil
 					}

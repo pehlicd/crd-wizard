@@ -111,8 +111,8 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 		webResults  string
 	)
 
-	// Task A: Fetch Live Examples from K8s
 	g.Go(func() error {
+		start := time.Now()
 		c.log.Info("retrieving live examples from cluster")
 		ex, err := c.KubeClient.FetchCRDExamples(groupCtx, group, version, kind)
 		if err != nil {
@@ -120,34 +120,39 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 			return nil // Non-fatal
 		}
 		crdExamples = ex
+		c.log.Info("live examples retrieved", "duration", time.Since(start))
 		return nil
 	})
 
-	// Task B: Perform Web Search (If enabled)
 	if c.Config.EnableSearch {
 		g.Go(func() error {
+			start := time.Now()
 			c.log.Info(fmt.Sprintf("searching web using %s", c.Config.SearchProvider))
 			query := fmt.Sprintf("kubernetes crd %s %s %s example yaml", group, version, kind)
 
 			var res string
 			var err error
 
+			searchCtx, cancel := context.WithTimeout(groupCtx, 5*time.Second)
+			defer cancel()
+
 			if c.Config.SearchProvider == SearchProviderGoogle {
-				res, err = c.performGoogleSearch(groupCtx, query)
+				res, err = c.performGoogleSearch(searchCtx, query)
 			} else {
-				res, err = c.performDuckDuckGoSearch(groupCtx, query)
+				res, err = c.performDuckDuckGoSearch(searchCtx, query)
 			}
 
 			if err != nil {
 				c.log.Warn("web search failed", "provider", c.Config.SearchProvider, "err", err)
-				return nil // Non-fatal
+				return nil
 			}
 			webResults = res
+			c.log.Info("web search completed", "duration", time.Since(start))
 			return nil
 		})
 	}
 
-	// Task C: Prune Schema (CPU bound, run locally)
+	startPrune := time.Now()
 	c.log.Info("pruning schema")
 	prunedSchema, err := pruneSchema(schemaJSON)
 	if err != nil {
@@ -157,6 +162,7 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 	if err != nil {
 		return "", fmt.Errorf("error marshaling pruned schema: %w", err)
 	}
+	c.log.Info("schema pruning completed", "duration", time.Since(startPrune), "pruned_size_bytes", len(prunedSchemaJSON))
 
 	// Wait for network tasks to finish
 	if err := g.Wait(); err != nil {
@@ -174,27 +180,34 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 	}
 
 	basePrompt := c.buildAugmentedPrompt(group, version, kind, string(prunedSchemaJSON), crdExamples, skeletonYAML, webResults)
+
+	c.log.Info("prompt constructed", "length_chars", len(basePrompt), "estimated_tokens", len(basePrompt)/4)
+
 	currentPrompt := basePrompt
 	var finalResponse string
 
+	totalInferenceStart := time.Now()
+
 	for attempt := 0; attempt <= c.Config.MaxValidationRetries; attempt++ {
+		attemptStart := time.Now()
 		c.log.Info("generating response from AI provider", "provider", c.Provider.Name(), "attempt", attempt+1)
 
 		response, err := c.Provider.Generate(ctx, currentPrompt)
 		if err != nil {
 			return "", err
 		}
+		c.log.Info("inference generation completed", "duration", time.Since(attemptStart))
 
 		// Validation Step
 		c.log.Info("validating generated example via dry-run")
 		validationErr := c.validateGeneratedContent(ctx, response)
 		if validationErr == nil {
-			c.log.Info("validation successful")
+			c.log.Info("validation successful", "attempt_duration", time.Since(attemptStart))
 			finalResponse = response
 			break
 		}
 
-		c.log.Warn("validation failed", "err", validationErr)
+		c.log.Warn("validation failed", "err", validationErr, "attempt_duration", time.Since(attemptStart))
 
 		// If this was the last attempt, return the best we have (or error out)
 		if attempt == c.Config.MaxValidationRetries {
@@ -209,7 +222,8 @@ func (c *Client) GenerateCrdContext(ctx context.Context, group, version, kind, s
 		currentPrompt = c.buildCorrectionPrompt(basePrompt, response, validationErr.Error())
 	}
 
-	// Save to Cache
+	c.log.Info("total generation pipeline completed", "total_duration", time.Since(totalInferenceStart))
+
 	if c.Config.EnableCache && finalResponse != "" {
 		c.cacheMu.Lock()
 		c.cache[cacheKey] = finalResponse
@@ -226,7 +240,46 @@ func (c *Client) validateGeneratedContent(ctx context.Context, content string) e
 		return fmt.Errorf("no yaml block found in response")
 	}
 
-	return c.KubeClient.DryRun(ctx, yamlContent)
+	// Sanitize YAML before validation (remove Namespace, Status, etc.)
+	// The user explicitly requested to ignore namespace/metadata errors.
+	sanitizedYAML, err := sanitizeYAML(yamlContent)
+	if err != nil {
+		c.log.Warn("failed to sanitize yaml, proceeding with original", "err", err)
+		sanitizedYAML = yamlContent
+	}
+
+	return c.KubeClient.DryRun(ctx, sanitizedYAML)
+}
+
+func sanitizeYAML(content string) (string, error) {
+	var obj map[string]any
+	if err := yaml.Unmarshal([]byte(content), &obj); err != nil {
+		return "", err
+	}
+
+	delete(obj, "status")
+
+	if meta, ok := obj["metadata"].(map[any]any); ok {
+		delete(meta, "namespace")
+		delete(meta, "uid")
+		delete(meta, "resourceVersion")
+		delete(meta, "creationTimestamp")
+		delete(meta, "managedFields")
+		delete(meta, "generation")
+	} else if meta, ok := obj["metadata"].(map[string]any); ok {
+		delete(meta, "namespace")
+		delete(meta, "uid")
+		delete(meta, "resourceVersion")
+		delete(meta, "creationTimestamp")
+		delete(meta, "managedFields")
+		delete(meta, "generation")
+	}
+
+	out, err := yaml.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func extractYAMLBlock(content string) string {
@@ -445,18 +498,18 @@ func (c *Client) buildAugmentedPrompt(group, version, kind, schemaJSON, examples
 }
 
 func generateYAMLFromSchema(group, version, kind, schemaJSON string) (string, error) {
-	var schema map[string]interface{}
+	var schema map[string]any
 	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
 		return "", fmt.Errorf("failed to unmarshal schema: %w", err)
 	}
 
-	root := make(map[string]interface{})
+	root := make(map[string]any)
 	root["apiVersion"] = fmt.Sprintf("%s/%s", group, version)
 	root["kind"] = kind
-	root["metadata"] = map[string]interface{}{"name": fmt.Sprintf("my-%s-demo", strings.ToLower(kind))}
+	root["metadata"] = map[string]any{"name": fmt.Sprintf("my-%s-demo", strings.ToLower(kind))}
 
-	if props, ok := schema["properties"].(map[string]interface{}); ok {
-		if specSchema, ok := props["spec"].(map[string]interface{}); ok {
+	if props, ok := schema["properties"].(map[string]any); ok {
+		if specSchema, ok := props["spec"].(map[string]any); ok {
 			root["spec"] = buildObjectFromSchema(specSchema)
 		}
 	}
@@ -467,14 +520,14 @@ func generateYAMLFromSchema(group, version, kind, schemaJSON string) (string, er
 	return string(yamlBytes), nil
 }
 
-func buildObjectFromSchema(schema map[string]interface{}) map[string]interface{} {
-	obj := make(map[string]interface{})
-	properties, ok := schema["properties"].(map[string]interface{})
+func buildObjectFromSchema(schema map[string]any) map[string]any {
+	obj := make(map[string]any)
+	properties, ok := schema["properties"].(map[string]any)
 	if !ok {
 		return obj
 	}
 	requiredSet := make(map[string]struct{})
-	if required, ok := schema["required"].([]interface{}); ok {
+	if required, ok := schema["required"].([]any); ok {
 		for _, req := range required {
 			if r, ok := req.(string); ok {
 				requiredSet[r] = struct{}{}
@@ -483,7 +536,7 @@ func buildObjectFromSchema(schema map[string]interface{}) map[string]interface{}
 	}
 	for key, val := range properties {
 		if _, isRequired := requiredSet[key]; isRequired {
-			if propSchema, ok := val.(map[string]interface{}); ok {
+			if propSchema, ok := val.(map[string]any); ok {
 				obj[key] = generateValueForSchema(key, propSchema)
 			}
 		}
@@ -491,7 +544,7 @@ func buildObjectFromSchema(schema map[string]interface{}) map[string]interface{}
 	return obj
 }
 
-func generateValueForSchema(key string, propSchema map[string]interface{}) interface{} {
+func generateValueForSchema(key string, propSchema map[string]any) any {
 	propType, _ := propSchema["type"].(string)
 	lowerKey := strings.ToLower(key)
 
@@ -517,10 +570,10 @@ func generateValueForSchema(key string, propSchema map[string]interface{}) inter
 	case "object":
 		return buildObjectFromSchema(propSchema)
 	case "array":
-		if items, ok := propSchema["items"].(map[string]interface{}); ok {
-			return []interface{}{generateValueForSchema("item", items)}
+		if items, ok := propSchema["items"].(map[string]any); ok {
+			return []any{generateValueForSchema("item", items)}
 		}
-		return []interface{}{}
+		return []any{}
 	default:
 		return "value"
 	}
@@ -531,35 +584,45 @@ func pruneSchema(schemaJSON string) (map[string]any, error) {
 	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal schema: %w", err)
 	}
-	return pruneMap(schema, 0), nil
+
+	if props, ok := schema["properties"].(map[string]any); ok {
+		delete(props, "status")
+	}
+
+	var pruned map[string]any
+
+	// Try Depth 5
+	pruned = pruneMap(schema, 0, 5)
+	bytes, _ := json.Marshal(pruned)
+
+	// If > 15KB (~3750 tokens), reduce depth to 3
+	if len(bytes) > 15000 {
+		pruned = pruneMap(schema, 0, 3)
+		bytes, _ = json.Marshal(pruned)
+	}
+
+	// If still > 15KB, reduce depth to 2 (drastic)
+	if len(bytes) > 15000 {
+		pruned = pruneMap(schema, 0, 2)
+	}
+
+	return pruned, nil
 }
 
 // pruneMap aggressively trims the schema to fit within LLM context limits.
-func pruneMap(data map[string]any, depth int) map[string]any {
+func pruneMap(data map[string]any, currentDepth, maxDepth int) map[string]any {
 	if data == nil {
 		return nil
 	}
-	// Hard depth limit. K8s CRDs can be deeply nested.
-	// Depth 10 is usually enough for the core structure.
-	if depth > 10 {
-		return map[string]any{"type": "object", "description": "truncated-depth"}
+
+	if currentDepth > maxDepth {
+		return map[string]any{"type": "object"}
 	}
 
 	result := make(map[string]any)
 
 	// Whitelist of keys to keep
 	keysToKeep := []string{"type", "required", "items", "properties", "x-kubernetes-int-or-string"}
-
-	// Only keep descriptions at top level or very shallow levels, and truncate them heavily
-	if depth < 3 {
-		if desc, ok := data["description"].(string); ok {
-			if len(desc) > 100 {
-				result["description"] = desc[:97] + "..."
-			} else {
-				result["description"] = desc
-			}
-		}
-	}
 
 	for _, k := range keysToKeep {
 		val, exists := data[k]
@@ -573,7 +636,7 @@ func pruneMap(data map[string]any, depth int) map[string]any {
 				newProps := make(map[string]any)
 				for propName, propVal := range props {
 					if propMap, ok := propVal.(map[string]any); ok {
-						newProps[propName] = pruneMap(propMap, depth+1)
+						newProps[propName] = pruneMap(propMap, currentDepth+1, maxDepth)
 					}
 				}
 				if len(newProps) > 0 {
@@ -582,7 +645,7 @@ func pruneMap(data map[string]any, depth int) map[string]any {
 			}
 		case "items":
 			if itemsMap, ok := val.(map[string]any); ok {
-				result[k] = pruneMap(itemsMap, depth+1)
+				result[k] = pruneMap(itemsMap, currentDepth+1, maxDepth)
 			}
 		case "required", "type", "x-kubernetes-int-or-string":
 			result[k] = val
