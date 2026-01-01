@@ -75,7 +75,7 @@ func init() {
 	// AI Flags
 	rootCmd.PersistentFlags().BoolVar(&enableAI, "enable-ai", false, "Enable AI features")
 	rootCmd.PersistentFlags().StringVar(&aiProvider, "ai-provider", "ollama", "AI provider to use (ollama, gemini, etc.)")
-	rootCmd.PersistentFlags().StringVar(&aiModel, "ai-model", "llama3.1", "Model to use for generation")
+	rootCmd.PersistentFlags().StringVar(&aiModel, "ai-model", "pehlicd/crd-wizard", "Model to use for AI analysis and generation")
 	rootCmd.PersistentFlags().StringVar(&ollamaHost, "ollama-host", "http://localhost:11434", "Ollama API host (only for ollama provider)")
 	rootCmd.PersistentFlags().IntVar(&ollamaNumCtx, "ollama-num-ctx", 0, "Ollama context window size")
 	rootCmd.PersistentFlags().StringVar(&ollamaKeepAlive, "ollama-keep-alive", "", "Ollama keep-alive duration")
