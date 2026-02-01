@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/spf13/cobra v1.10.1
 	golang.org/x/sync v0.17.0
-	google.golang.org/genai v1.40.0
+	google.golang.org/genai v1.44.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
