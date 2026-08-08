@@ -1,0 +1,29 @@
+name: Validate Manifest
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate-manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: validate
+        run: |
+          set -ex
+
+          echo "Checking if manifests have been updated..."
+          make create-k8s-manifest
+          rc=0
+          git update-index --refresh && git diff-index --quiet HEAD -- || rc=1
+          if [ $rc -ne 0 ]; then
+            echo "FATAL: Need to run \"make create-k8s-manifest\""
+            git diff
+            exit 1
+          fi
