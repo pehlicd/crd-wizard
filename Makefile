@@ -21,7 +21,7 @@ IMAGE_TAG ?= $(VERSION)
 PLATFORMS ?= linux/amd64,linux/arm64
 
 # Main Targets
-.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx clean lint-helm
+.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx create-k8s-manifest clean lint-helm
 
 ## Run the application in serve mode
 run:
@@ -104,6 +104,11 @@ deploy-ingress-nginx:
 		--for=condition=ready pod \
 		--selector=app.kubernetes.io/component=controller \
 		--timeout=180s
+
+## Create manifest from Helm chart
+create-k8s-manifest:
+	@echo "$(OK_COLOR)==> Creating Kubernetes manifest from Helm chart...$(NO_COLOR)"
+	scripts/manifest.sh
 
 # Cleanup
 ## Remove built binaries and cleanup
