@@ -87,14 +87,14 @@ You can deploy CRD Wizard to your Kubernetes cluster using Kustomize.
 
 **Default Deployment (uses `latest` tag):**
 ```shell
-kubectl apply -k deploy/k8s/base
+kubectl apply -f deploy/k8s/base/deployment.yaml
 ```
 
 **Install directly from GitHub:**
 You can also deploy directly without cloning the repository:
 
 ```shell
-kubectl apply -k 'github.com/pehlicd/crd-wizard/deploy/k8s/base?ref=main'
+kubectl apply -f 'https://raw.githubusercontent.com/pehlicd/crd-wizard/refs/heads/main/deploy/k8s/base/deployment.yaml'
 ```
 
 **Custom Deployment (specify version):**
