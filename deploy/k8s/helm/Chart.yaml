@@ -1,0 +1,20 @@
+apiVersion: v2
+name: crd-wizard
+description: |
+  CR(D) Wizard is a web and tui based dashboard designed to provide a clear and intuitive interface for visualizing
+  and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps
+  k8s users to quickly understand the state of their custom controllers and the resources they manage.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"
+home: https://github.com/pehlicd/crd-wizard
+keywords:
+  - crd
+  - cr
+  - k8s
+  - kubernetes
+  - api
+  - custom-resource-definition
+  - custom-resource
+sources:
+  - https://github.com/pehlicd/crd-wizard

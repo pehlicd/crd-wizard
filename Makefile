@@ -21,7 +21,7 @@ IMAGE_TAG ?= $(VERSION)
 PLATFORMS ?= linux/amd64,linux/arm64
 
 # Main Targets
-.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx clean
+.PHONY: run serve run-ui build-ui build-ui-and-embed build-backend fmt docker-build create-cluster delete-cluster deploy-ingress-nginx clean lint-helm
 
 ## Run the application in serve mode
 run:
@@ -110,3 +110,9 @@ deploy-ingress-nginx:
 clean:
 	@echo "$(OK_COLOR)==> Cleaning up build artifacts...$(NO_COLOR)"
 	rm -rf $(BIN_DIR)
+
+# Linting
+## Lint Helm charts
+lint-helm:
+	@echo "$(OK_COLOR)==> Linting Helm charts...$(NO_COLOR)"
+	helm lint deploy/k8s/helm/
