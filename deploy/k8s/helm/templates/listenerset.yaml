@@ -1,0 +1,22 @@
+{{- if .Values.listenerSet.enabled -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: {{ include "crd-wizard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "crd-wizard.labels" . | nindent 4 }}
+  {{- with .Values.listenerSet.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRef:
+    {{- with .Values.listenerSet.parentRef }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  listeners:
+    {{- with .Values.listenerSet.listeners }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,8 @@
+---
+fullnameOverride: crd-wizard
+ingress:
+  enabled: true
+  hosts:
+    - paths:
+        - path: /
+          pathType: Prefix

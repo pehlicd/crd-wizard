@@ -152,3 +152,32 @@ jobs:
             VERSION=${{ github.ref_name }}
             BUILD_DATE=${{ steps.date.outputs.BUILD_DATE }}
             COMMIT_SHA=${{ github.sha }}
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Helm chart to registries
+        env:
+          VERSION: "${{ github.ref_name }}"
+        run: |
+          set -ex
+
+          VERSION="${VERSION#v}"
+
+          helm dependency build deploy/k8s/helm
+          helm package deploy/k8s/helm --version "${VERSION}" --app-version "${VERSION}" --destination .
+          if [ "${{ github.event_name }}" == pull_request ]; then
+            echo "Pull request, skipping push"
+            exit 0
+          fi
+          helm push "crd-wizard-${VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/helm-charts" 2>&1 | tee -a helm-push-out.txt
