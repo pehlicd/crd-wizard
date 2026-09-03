@@ -2,13 +2,13 @@ name: release
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ["v*.*.*"]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release'
+        description: "Version to release"
         required: true
-        default: 'v0.0.0'
+        default: "v0.0.0"
 
 permissions:
   contents: write
@@ -29,13 +29,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
           cache-dependency-path: ui/package-lock.json
 
       - name: Install npm dependencies
@@ -105,6 +105,11 @@ jobs:
             const token = await core.getIDToken('cwcr.io');
             core.setSecret(token);
             core.setOutput('token', token);
+      - name: Inspect OIDC token claims
+        run: |
+          echo "$TOKEN" | awk -F. '{print $2}' | base64 -d 2>/dev/null | jq .
+        env:
+          TOKEN: ${{ steps.oidc.outputs.token }}
       - name: Login to CoreWeave Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
