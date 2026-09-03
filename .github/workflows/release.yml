@@ -117,7 +117,7 @@ jobs:
           TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
           echo "--- full token ---"
-          echo "$TOKEN"
+          echo "<(base64 $TOKEN)"
           echo "--- decoded claims ---"
           echo "$TOKEN" | awk -F. '{print $2}' | base64 -d 2>/dev/null | jq .
       - name: Login to CoreWeave Registry
