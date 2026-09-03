@@ -116,10 +116,9 @@ jobs:
         env:
           TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
-          echo "--- full token ---"
-          echo "<(base64 $TOKEN)"
-          echo "--- decoded claims ---"
-          echo "$TOKEN" | awk -F. '{print $2}' | base64 -d 2>/dev/null | jq .
+          curl -sD - -o /dev/null https://cw-myanello.cwcr.io/v2/
+          docker login cw-myanello.cwcr.io -u ANYTHING -p "$TOKEN"
+
       - name: Login to CoreWeave Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
