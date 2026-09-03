@@ -12,7 +12,7 @@ on:
 
 permissions:
   contents: write
-  packages: write
+  id-token: write
   issues: write
 
 jobs:
@@ -59,15 +59,6 @@ jobs:
           git tag -f ${{ github.ref_name }} ${{ steps.commit.outputs.commit_hash }}
           git push --force origin refs/tags/${{ github.ref_name }}
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Update Homebrew Formula
         run: |
           FORMULA_FILE="crd-wizard.rb"
@@ -89,9 +80,6 @@ jobs:
         id: brew-formula-commit
         with:
           branch: main
-          commit_author: "${{ steps.import-gpg.outputs.name }} <${{ steps.import-gpg.outputs.email }}>"
-          commit_user_name: ${{ steps.import-gpg.outputs.name }}
-          commit_user_email: ${{ steps.import-gpg.outputs.email }}
           commit_message: "build(release): bump brew formula ${{ github.ref_name }}"
           push_options: "--force"
 
@@ -108,19 +96,28 @@ jobs:
       - name: Set up Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
+      - name: Get OIDC token for CoreWeave registry
+        if: github.event_name != 'pull_request'
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('cwcr.io');
+            core.setSecret(token);
+            core.setOutput('token', token);
+      - name: Login to CoreWeave Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: cw-myanello.cwcr.io
+          username: github-oidc
+          password: ${{ steps.oidc.outputs.token }}
       - name: Docker meta
         id: crd-wizard
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository }}
+            cw-myanello.cwcr.io/${{ github.repository }}
           tags: |
             type=schedule
             type=semver,pattern={{version}}
