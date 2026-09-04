@@ -111,14 +111,6 @@ jobs:
           echo "$TOKEN"
         env:
           TOKEN: ${{ steps.oidc.outputs.token }}
-      - name: Print OIDC token claims
-        shell: bash
-        env:
-          TOKEN: ${{ steps.oidc.outputs.token }}
-        run: |
-          curl -sD - -o /dev/null https://cw-myanello.cwcr.io/v2/
-          docker login cw-myanello.cwcr.io -u ANYTHING -p "$TOKEN"
-
       - name: Login to CoreWeave Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
