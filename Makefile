@@ -40,8 +40,8 @@ run-ui:
 
 ## Build the UI
 build-ui:
+	cd ui && npm i && npm run build
 	@echo "$(OK_COLOR)==> Building UI...$(NO_COLOR)"
-	cd ui && npm run build
 
 ## Build UI, embed it into Go application, and clean up artifacts
 build-ui-and-embed: build-ui
@@ -57,6 +57,18 @@ build-ui-and-embed: build-ui
 run-tui:
 	@echo "$(OK_COLOR)==> Running Terminal UI...$(NO_COLOR)"
 	go run . tui
+
+## Run Web UI Demo Automation
+demo-web:
+	@echo "$(OK_COLOR)==> Running Web UI Demo Automation...$(NO_COLOR)"
+	@echo "$(WARN_COLOR)Ensure the web server is running on localhost:8080!$(NO_COLOR)"
+	cd ui && npm run test:demo
+
+## Convert web demo video to GIF (requires ffmpeg)
+demo-gif: demo-web
+	@echo "$(OK_COLOR)==> Converting video to GIF...$(NO_COLOR)"
+	@cd ui && ffmpeg -y -v error -i $$(find test-results -name "*.webm" | head -n 1) -vf "fps=10,scale=1280:-1:flags=lanczos" -c:v gif -f gif demo.gif
+	@echo "$(OK_COLOR)Demo GIF created at ui/demo.gif$(NO_COLOR)"
 
 
 ## Build the Go backend and place the binary in bin directory

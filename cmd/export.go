@@ -40,14 +40,14 @@ Supported formats are HTML and Markdown.`,
   crd-wizard export prometheuses.monitoring.coreos.com -o prometheus.html
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
+		log := logger.NewLogger(cfg.LogFormat, cfg.LogLevel, os.Stderr)
 
 		if !exportAll && len(args) == 0 {
 			log.Error("error: you must specify a CRD name or use --all")
 			os.Exit(1)
 		}
 
-		client, err := k8s.NewClient(kubeconfig, context, log)
+		client, err := k8s.NewClient(cfg.Kubeconfig, cfg.Context, log)
 		if err != nil {
 			log.Error("unable to create k8s client", "err", err)
 			os.Exit(1)

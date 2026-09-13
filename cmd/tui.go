@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
@@ -56,10 +55,10 @@ the TUI pre-focused on a specific CRD or Kind.`,
   # Launch and focus on a Kind and specific CRD
   crd-wizard tui --crd alertmanagers.monitoring.coreos.com --kind Prometheus`,
 	Run: func(_ *cobra.Command, _ []string) {
-		log := logger.NewLogger(logFormat, logLevel, io.Discard)
+		log := logger.NewLogger(cfg.LogFormat, cfg.LogLevel, io.Discard)
 
 		// Initialize the ClusterManager to load all contexts.
-		clusterManager, err := k8s.NewClusterManager(kubeconfig, log)
+		clusterManager, err := k8s.NewClusterManager(cfg.Kubeconfig, log)
 		if err != nil {
 			fmt.Printf("❌ Could not create cluster manager: %v\n", err)
 			os.Exit(1)
@@ -67,21 +66,8 @@ the TUI pre-focused on a specific CRD or Kind.`,
 		fmt.Printf("✅ Loaded %d cluster(s) from kubeconfig\n", clusterManager.ClusterCount())
 
 		var aiClient *ai.Client
-		if enableAI {
-			aiConfig := ai.Config{
-				Provider:        ai.Provider(aiProvider),
-				Model:           aiModel,
-				OllamaHost:      ollamaHost,
-				RequestTimeout:  time.Duration(requestTimeout) * time.Minute,
-				OllamaNumCtx:    ollamaNumCtx,
-				OllamaKeepAlive: ollamaKeepAlive,
-				EnableCache:     enableCache,
-				EnableSearch:    enableSearch,
-				SearchProvider:  ai.SearchProvider(searchProvider),
-				GoogleAPIKey:    googleAPIKey,
-				GoogleCX:        googleCX,
-				GeminiAPIKey:    geminiAPIKey,
-			}
+		if cfg.AI.Enabled {
+			aiConfig := cfg.AI.ToAIConfig(cfg.Search)
 			// AI client needs a single K8s client for context fetching, use current
 			aiClient = ai.NewClient(aiConfig, clusterManager.GetCurrentClient(), log)
 		}
