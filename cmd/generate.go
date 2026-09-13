@@ -33,7 +33,7 @@ Example:
   crd-wizard generate -f path/to/crd.yaml -o html > doc.html
   crd-wizard generate -f path/to/crd.yaml -o markdown > doc.md`,
 	Run: func(_ *cobra.Command, _ []string) {
-		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
+		log := logger.NewLogger(cfg.LogFormat, cfg.LogLevel, os.Stderr)
 
 		var crdContent []byte
 		var err error
