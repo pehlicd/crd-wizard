@@ -9,7 +9,6 @@ CR(D) Wizard
 ![go version](https://img.shields.io/github/go-mod/go-version/pehlicd/crd-wizard)
 ![release](https://img.shields.io/github/v/release/pehlicd/crd-wizard?filter=v*)
 ![license](https://img.shields.io/github/license/pehlicd/crd-wizard)
-[![go report](https://goreportcard.com/badge/github.com/pehlicd/crd-wizard)](https://goreportcard.com/report/github.com/pehlicd/crd-wizard)
 
 </h1>
 
