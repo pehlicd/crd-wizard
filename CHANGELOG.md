@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/pehlicd/crd-wizard/compare/v0.2.1...v0.2.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* **helm:** Use correct container repository ([d047c2f](https://github.com/pehlicd/crd-wizard/commit/d047c2f0937583fe7be5bf4090bdb883084f0fdc))
+
 ## [0.2.1](https://github.com/pehlicd/crd-wizard/compare/v0.2.0...v0.2.1) (2026-09-13)
 
 
