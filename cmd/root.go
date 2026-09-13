@@ -21,8 +21,9 @@ import (
 
 	"time"
 
-	"github.com/pehlicd/crd-wizard/internal/config"
 	"github.com/spf13/cobra"
+
+	"github.com/pehlicd/crd-wizard/internal/config"
 )
 
 // cfg holds the global application configuration
