@@ -3,14 +3,11 @@ kind: Kustomization
 
 resources:
 - deployment.yaml
-- service.yaml
-- rbac.yaml
-- ingress.yaml
 
 labels:
 - includeSelectors: true
   pairs:
-    app: crd-wizard
+    app.kubernetes.io/name: crd-wizard
 
 images:
 - name: ghcr.io/pehlicd/crd-wizard

@@ -50,3 +50,5 @@
 !*/
 
 ui/.env.local
+
+!scripts/*
