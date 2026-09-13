@@ -8,7 +8,7 @@ RUN npm install -g npm@latest && \
     npm install --force
 RUN npm run build
 
-FROM golang:1.24 AS backend-builder
+FROM golang:1.26 AS backend-builder
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ RUN go build \
     -ldflags="-s -w -X github.com/pehlicd/crd-wizard/cmd.versionString=${VERSION} -X github.com/pehlicd/crd-wizard/cmd.buildDate=${BUILD_DATE} -X github.com/pehlicd/crd-wizard/cmd.buildCommit=${COMMIT_SHA}" \
     -o crd-wizard
 
-FROM alpine:3.22.1
+FROM alpine:3
 
 COPY --from=backend-builder /app/crd-wizard /usr/local/bin/crd-wizard
 
