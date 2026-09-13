@@ -251,6 +251,15 @@ func (m crdListModel) SelectedItem() *models.CRD {
 	return nil
 }
 
+// IsFiltering reports whether the filter text input is currently capturing
+// keystrokes. mainModel checks this before intercepting a single-letter key
+// as a global hotkey (#149) — otherwise typing "chart" into the filter box
+// opens the cluster selector on "c" and triggers AI analysis on "a" instead
+// of reaching the text input at all.
+func (m crdListModel) IsFiltering() bool {
+	return m.filtering
+}
+
 func (m crdListModel) View() string {
 	if m.err != nil {
 		return fmt.Sprintf("\n   %s %s\n\n", ErrStyle.Render("Error:"), m.err)

@@ -98,6 +98,15 @@ func (m mainModel) Init() tea.Cmd {
 	return m.crdListModel.Init()
 }
 
+// crdListFiltering reports whether crdListModel's filter text input is
+// currently capturing keystrokes. m.crdListModel is held as the tea.Model
+// interface, so this is nil (never filtering) for any other concrete model
+// or before it is initialised.
+func (m mainModel) crdListFiltering() bool {
+	cl, ok := m.crdListModel.(crdListModel)
+	return ok && cl.IsFiltering()
+}
+
 func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -132,8 +141,15 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		// While the crdListView's filter text input is capturing keystrokes,
+		// every key belongs to it, not to a global hotkey (#149) — otherwise
+		// typing "chart" into the filter box opens the cluster selector on
+		// "c" and triggers AI analysis on "a" before the letter ever reaches
+		// the text input.
+		filtering := m.view == crdListView && m.crdListFiltering()
+
 		// AI Analysis Trigger
-		if msg.String() == "a" {
+		if msg.String() == "a" && !filtering {
 			if m.view != crdListView {
 				// Ignore if not in list view
 				return m, nil
@@ -153,7 +169,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Cluster Selector Trigger (only from crdListView)
-		if msg.String() == "c" {
+		if msg.String() == "c" && !filtering {
 			if m.view == crdListView && !m.analyzing && !m.showModal {
 				// Find current cluster index
 				currentName := m.clusterManager.GetCurrentContextName()
