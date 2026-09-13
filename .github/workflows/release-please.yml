@@ -22,6 +22,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Run release-please
+        id: release-please
+        uses: google-github-actions/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Checkout Release Branch
+        if: ${{ steps.release-please.outputs.pr != '' }}
+        id: checkout-release-branch
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
+          fetch-depth: 0
+
       - name: "Import GPG key"
         id: import-gpg
         uses: crazy-max/ghaction-import-gpg@v6
@@ -31,10 +47,10 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - name: Run release-please
-        id: release-please
-        uses: google-github-actions/release-please-action@v4
-        with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          config-file: .release-please-config.json
-          manifest-file: .release-please-manifest.json
+      - name: Amend the PR commit to sign it
+        if: ${{ steps.checkout-release-branch.conclusion == 'success' && steps.import-gpg.conclusion == 'success' }}
+        run: |-
+          git config --global user.name "${{ steps.import-gpg.outputs.name }}"
+          git config --global user.email "${{ steps.import-gpg.outputs.email }}"
+          git commit --amend --no-edit -S
+          git push --force
