@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"os"
-	"time"
 
 	"github.com/pehlicd/crd-wizard/internal/ai"
 	"github.com/pehlicd/crd-wizard/internal/k8s"
@@ -28,20 +27,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Configuration variables bound to flags
-var (
-	port string
-)
-
 // webCmd represents the web command
 var webCmd = &cobra.Command{
 	Use:   "web",
 	Short: "Launch a web server to serve CRD data via a JSON API.",
 	Long:  `The web server exposes endpoints to list CRDs, their instances, and related events. It can be used as a backend for a graphical user interface.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		log := logger.NewLogger(logFormat, logLevel, os.Stderr)
+		log := logger.NewLogger(cfg.LogFormat, cfg.LogLevel, os.Stderr)
 
-		clusterManager, err := k8s.NewClusterManager(kubeconfig, log)
+		clusterManager, err := k8s.NewClusterManager(cfg.Kubeconfig, log)
 		if err != nil {
 			log.Error("unable to create cluster manager", "err", err)
 			os.Exit(1)
@@ -49,39 +43,24 @@ var webCmd = &cobra.Command{
 
 		var aiClient *ai.Client
 
-		if enableAI {
+		if cfg.AI.Enabled {
 			// Construct the AI Config from flags
-			aiConfig := ai.Config{
-				Provider:        ai.Provider(aiProvider),
-				Model:           aiModel,
-				OllamaHost:      ollamaHost,
-				RequestTimeout:  time.Duration(requestTimeout) * time.Minute,
-				OllamaNumCtx:    ollamaNumCtx,
-				OllamaKeepAlive: ollamaKeepAlive,
-				EnableCache:     enableCache,
-
-				// Search Configuration
-				EnableSearch:   enableSearch,
-				SearchProvider: ai.SearchProvider(searchProvider),
-				GoogleAPIKey:   googleAPIKey,
-				GoogleCX:       googleCX,
-				GeminiAPIKey:   geminiAPIKey,
-			}
+			aiConfig := cfg.AI.ToAIConfig(cfg.Search)
 
 			// AI client needs a single K8s client for context fetching, use current
 			aiClient = ai.NewClient(aiConfig, clusterManager.GetCurrentClient(), log)
 
 			log.Info("AI features enabled",
-				"provider", aiProvider,
-				"model", aiModel,
-				"ollama_host", ollamaHost,
-				"search_enabled", enableSearch,
-				"search_provider", searchProvider,
+				"provider", cfg.AI.Provider,
+				"model", cfg.AI.Model,
+				"ollama_host", cfg.AI.OllamaHost,
+				"search_enabled", cfg.Search.Enabled,
+				"search_provider", cfg.Search.Provider,
 			)
 		}
 
-		server := web.NewServer(clusterManager, port, aiClient, log)
-		log.Info("starting web server", "port", port, "clusters", clusterManager.ClusterCount())
+		server := web.NewServer(clusterManager, cfg.Web.Port, aiClient, log)
+		log.Info("starting web server", "port", cfg.Web.Port, "clusters", clusterManager.ClusterCount())
 		if err := server.Start(); err != nil {
 			log.Error("error starting web server", "err", err)
 			os.Exit(1)
@@ -91,7 +70,7 @@ var webCmd = &cobra.Command{
 
 func init() {
 	// Server Flags
-	webCmd.Flags().StringVarP(&port, "port", "p", "8080", "Port for the web server")
+	webCmd.Flags().StringVarP(&cfg.Web.Port, "port", "p", "8080", "Port for the web server")
 
 	rootCmd.AddCommand(webCmd)
 }
