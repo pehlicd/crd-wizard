@@ -2,13 +2,13 @@ name: release
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ["v*.*.*"]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release'
+        description: "Version to release"
         required: true
-        default: 'v0.0.0'
+        default: "v0.0.0"
 
 permissions:
   contents: write
@@ -29,13 +29,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: "1.26"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
           cache-dependency-path: ui/package-lock.json
 
       - name: Install npm dependencies
@@ -80,38 +80,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Homebrew Formula
-        run: |
-          FORMULA_FILE="crd-wizard.rb"
-          VERSION="${{ github.ref_name }}"
-          REVISION="${{ steps.commit.outputs.commit_hash }}"
-
-          echo "Updating formula to version ${VERSION} and revision ${REVISION}"
-
-          # Use sed to update the tag and revision lines in the formula file.
-          # The -i flag edits the file in place.
-          sed -i 's/tag: .*/tag:      "'"${VERSION}"'",/' "${FORMULA_FILE}"
-          sed -i 's/revision: .*/revision: "'"${REVISION}"'"/' "${FORMULA_FILE}"
-
-          echo "Formula file ${FORMULA_FILE} updated:"
-          cat "${FORMULA_FILE}"
-
-      - name: "Commit and push changes"
-        uses: stefanzweifel/git-auto-commit-action@v6
-        id: brew-formula-commit
-        with:
-          branch: main
-          commit_author: "${{ steps.import-gpg.outputs.name }} <${{ steps.import-gpg.outputs.email }}>"
-          commit_user_name: ${{ steps.import-gpg.outputs.name }}
-          commit_user_email: ${{ steps.import-gpg.outputs.email }}
-          commit_message: "build(release): bump brew formula ${{ github.ref_name }}"
-          push_options: "--force"
-
-      - name: Update new version in krew-index
-        uses: rajatjindal/krew-release-bot@v0.0.47
-
   containerize:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -120,26 +94,32 @@ jobs:
       - name: Set up Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
+
+      - name: Set up CWIC
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: coreweave/actions-public/cwic/setup-cwic@6b225e30df11c646ddee8641565935318f0918f0 # v1.2.0
+
+      - name: Login to CWCR
+        if: github.event_name != 'pull_request'
+        uses: coreweave/actions-public/auth/cwcr-login@ec350562180b3659fe9d96f37a2a1a0e6907e29e # v1.3.0
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: cwcr-demo.cwcr.io
+          audience: https://coreweave.com/iam
+
       - name: Docker meta
         id: crd-wizard
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository }}
+          images: cwcr-demo.cwcr.io/crd-wizard
           tags: |
             type=schedule
             type=semver,pattern={{version}}
             type=sha,prefix=
+
       - name: Set build date
         id: date
-        run: echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        run: echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -155,22 +135,31 @@ jobs:
 
   helm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Login to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Helm chart to registries
+      - name: Set up CWIC
+        if: github.event_name != 'pull_request'
+        uses: coreweave/actions-public/cwic/setup-cwic@6b225e30df11c646ddee8641565935318f0918f0 # v1.2.0
+
+      - name: Login to CWCR
+        if: github.event_name != 'pull_request'
+        uses: coreweave/actions-public/auth/cwcr-login@ec350562180b3659fe9d96f37a2a1a0e6907e29e # v1.3.0
+        with:
+          registry: cwcr-demo.cwcr.io
+          audience: https://coreweave.com/iam
+
+      - name: Push Helm chart to CWCR
         env:
           VERSION: "${{ github.ref_name }}"
         run: |
-          set -ex
+          set -euo pipefail
+          set -x
 
           VERSION="${VERSION#v}"
 
@@ -180,4 +169,4 @@ jobs:
             echo "Pull request, skipping push"
             exit 0
           fi
-          helm push "crd-wizard-${VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/helm-charts" 2>&1 | tee -a helm-push-out.txt
+          helm push "crd-wizard-${VERSION}.tgz" "oci://cwcr-demo.cwcr.io/helm" 2>&1 | tee -a helm-push-out.txt
